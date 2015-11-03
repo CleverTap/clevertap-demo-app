@@ -2,12 +2,14 @@ from clevertap import CleverTap
 import time
 import datetime
 import boto3
+from boto3.dynamodb.conditions import Key, Attr
 
 import logging
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 TABLE_NAME = "quotes"
+INDEX_NAME = "PersonalityTypeIndex"
 
 CT_ACCOUNT_ID = "6Z8-64Z-644Z"
 CT_ACCOUNT_PASSCODE = "WVE-SAD-OAAL"
@@ -63,55 +65,60 @@ def handler (event, context):
             }
 
     res = clevertap.profiles(query)
-    try:
-        profiles = res[0]
-    except Exception, e:
-        profiles = []
 
-    for profile in profiles:
+    for profile_array in res:
+        for profile in profile_array:
+            object_id = profile.get("cookie", None)
 
-        object_id = profile.get("cookie", None)
-        if not object_id:
-            continue
+            if not object_id:
+                continue
 
-        personality_type = profile.get("personalityType", "water")
+            personality_type = profile.get("pv", {}).get("personalityType", "water")
 
-        # fetch the new quote and quote_id based on personality type
-        # TODO
-        quote = "A B C D E F G H I J K"
-        quote_id = '12345678'
+            # TODO: prevent dupes
 
-        if not quote or not quote_id:
-            continue
+            try:
+                query_response = dynamo.query(TableName=TABLE_NAME, IndexName=INDEX_NAME, KeyConditionExpression=Key('p_type').eq(personality_type))
+                logger.info(query_response)
+                item = query_response.get("Items", [])[0]
+                quote = item.get("quote")
+                quote_id = item.get("quote_id")
+            except Exception, e:
+                logger.error(e)
+                quote = "You Failed"
+                quote_id = '123456'
 
-        # update profile and push actions into CT to trigger messaging
-        data = []
-        ts = int(time.time())
-        has_email = profile.get("em", False)
+            if not quote or not quote_id:
+                continue
 
-        data.append({'type': 'profile',
-                    'WZRK_G': object_id,
-                    'ts': ts,
-                    'profileData': {'quoteId': quote_id}
-                    }) 
+            # update profile and push actions into CT to trigger messaging
+            data = []
+            ts = int(time.time())
+            has_email = profile.get("em", False)
 
-        data.append({'type': 'event',
-                    'WZRK_G': object_id,
-                    'ts': ts,
-                    'evtName': 'newQuote',
-                    'evtData': {"value":quote}
-                    })
+            data.append({'type': 'profile',
+                        'WZRK_G': object_id,
+                        'ts': ts,
+                        'profileData': {'quoteId': quote_id}
+                        }) 
 
-        if has_email:
             data.append({'type': 'event',
-                    'WZRK_G': object_id,
-                    'ts': ts,
-                    'evtName': 'newQuoteEmail',
-                    'evtData': {"value":quote}
-                    })
+                        'WZRK_G': object_id,
+                        'ts': ts,
+                        'evtName': 'newQuote',
+                        'evtData': {"value":quote}
+                        })
 
-        if len(data) > 0:
-            clevertap.up(data)
+            if has_email:
+                data.append({'type': 'event',
+                        'WZRK_G': object_id,
+                        'ts': ts,
+                        'evtName': 'newQuoteEmail',
+                        'evtData': {"value":quote}
+                        })
+
+            if len(data) > 0:
+                clevertap.up(data)
         
     return True    
 
