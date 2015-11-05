@@ -3,6 +3,7 @@ import time
 import datetime
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
+import random
 
 import logging
 logger = logging.getLogger()
@@ -44,12 +45,10 @@ def handler (event, context):
     fmt = '%Y%m%d'
     to_date = int(utc_now.strftime(fmt))
 
-    # we always want to send to people at 9am local time so calc their offset
+    # we always want to send to people at ~9am local time so calc their offset
     # add one as we will run this just before the hour
     hour_offset = 9 - (utc_now.hour+1)
-    print hour_offset
     tz_string = "UTC%s" % hour_offset
-    print tz_string
 
     query = {'event_name': 'App Launched',
             'from': from_date,
@@ -80,13 +79,14 @@ def handler (event, context):
             try:
                 query_response = dynamo.query(TableName=TABLE_NAME, IndexName=INDEX_NAME, KeyConditionExpression=Key('p_type').eq(personality_type))
                 logger.info(query_response)
-                item = query_response.get("Items", [])[0]
+                items = query_response.get("Items", [])
+                item = random.choice(items)
                 quote = item.get("quote")
                 quote_id = item.get("quote_id")
             except Exception, e:
                 logger.error(e)
-                quote = "You Failed"
-                quote_id = '123456'
+                quote = None 
+                quote_id = None 
 
             if not quote or not quote_id:
                 continue

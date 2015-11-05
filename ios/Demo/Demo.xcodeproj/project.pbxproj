@@ -13,6 +13,7 @@
 		52C96BF71BE7F7A1002F6127 /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 52C96BF51BE7F7A1002F6127 /* Main.storyboard */; };
 		52C96BF91BE7F7A1002F6127 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 52C96BF81BE7F7A1002F6127 /* Assets.xcassets */; };
 		52C96BFC1BE7F7A1002F6127 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 52C96BFA1BE7F7A1002F6127 /* LaunchScreen.storyboard */; };
+		52FDFBDF1BEADE8700E9AB7C /* CloudKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 52FDFBDE1BEADE8700E9AB7C /* CloudKit.framework */; };
 		ADB2438DD1DD18A371C7BD31 /* libPods.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 9DC01DD4FE107FE77E65DB6C /* libPods.a */; };
 /* End PBXBuildFile section */
 
@@ -28,6 +29,8 @@
 		52C96BF81BE7F7A1002F6127 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		52C96BFB1BE7F7A1002F6127 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		52C96BFD1BE7F7A1002F6127 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		52FDFBDD1BEADE8500E9AB7C /* Demo.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = Demo.entitlements; sourceTree = "<group>"; };
+		52FDFBDE1BEADE8700E9AB7C /* CloudKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CloudKit.framework; path = System/Library/Frameworks/CloudKit.framework; sourceTree = SDKROOT; };
 		9DC01DD4FE107FE77E65DB6C /* libPods.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = libPods.a; sourceTree = BUILT_PRODUCTS_DIR; };
 		9FA77836CA28A49A2CA4A0C7 /* Pods.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.release.xcconfig; path = "Pods/Target Support Files/Pods/Pods.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -38,6 +41,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				ADB2438DD1DD18A371C7BD31 /* libPods.a in Frameworks */,
+				52FDFBDF1BEADE8700E9AB7C /* CloudKit.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +69,7 @@
 		52C96BEB1BE7F7A1002F6127 /* Demo */ = {
 			isa = PBXGroup;
 			children = (
+				52FDFBDD1BEADE8500E9AB7C /* Demo.entitlements */,
 				52C96BEF1BE7F7A1002F6127 /* AppDelegate.h */,
 				52C96BF01BE7F7A1002F6127 /* AppDelegate.m */,
 				52C96BF21BE7F7A1002F6127 /* ViewController.h */,
@@ -89,6 +94,7 @@
 		67222F79A459587164EBEB19 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				52FDFBDE1BEADE8700E9AB7C /* CloudKit.framework */,
 				9DC01DD4FE107FE77E65DB6C /* libPods.a */,
 			);
 			name = Frameworks;
@@ -136,9 +142,12 @@
 				TargetAttributes = {
 					52C96BE81BE7F7A1002F6127 = {
 						CreatedOnToolsVersion = 7.1;
-						DevelopmentTeam = 2PGY6D8X3C;
+						DevelopmentTeam = A5J34NR598;
 						SystemCapabilities = {
 							com.apple.Push = {
+								enabled = 1;
+							};
+							com.apple.iCloud = {
 								enabled = 1;
 							};
 						};
@@ -329,11 +338,12 @@
 			baseConfigurationReference = 1E5FE18D614CBE927A5AA33B /* Pods.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Demo/Demo.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = Demo/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.clevertap.tempdemo;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clevertap.demo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 			};
@@ -344,11 +354,12 @@
 			baseConfigurationReference = 9FA77836CA28A49A2CA4A0C7 /* Pods.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_ENTITLEMENTS = Demo/Demo.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				INFOPLIST_FILE = Demo/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
-				PRODUCT_BUNDLE_IDENTIFIER = com.clevertap.tempdemo;
+				PRODUCT_BUNDLE_IDENTIFIER = com.clevertap.demo;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE = "";
 			};

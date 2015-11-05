@@ -11,8 +11,18 @@
 #import <AWSCore/AWSCore.h>
 #import <AWSCognito/AWSCognito.h>
 #import <AWSLambda/AWSLambda.h>
+#import <CloudKit/CloudKit.h>
 
-@interface AppDelegate ()
+void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
+
+@interface AppDelegate () {
+    
+}
+
+@property(nonatomic,retain) NSString *iCloudUserID;
+@property(nonatomic,retain) CKRecordID *myRecordId;
+@property(nonatomic,retain) CKDiscoveredUserInfo *me;
+@property(nonatomic,retain) CKRecord *myRecord;
 
 @end
 
@@ -71,7 +81,7 @@
     AWSLambdaInvoker *lambdaInvoker = [AWSLambdaInvoker defaultLambdaInvoker];
     
     NSDictionary *parameters = @{@"operation" : @"fetchQuoteFromId",
-                                 @"quoteId"   : @"123456",
+                                 @"quoteId"   : @"1",
                                  @"isError"   : @NO};
     
     [[lambdaInvoker invokeFunction:@"DemoAPI"
@@ -92,7 +102,39 @@
         return nil;
     }];
     
+    [self handleCloudKitAuthentication];
+    
     return YES;
+}
+
+# pragma mark CloudKit
+-(void) handleCloudKitAuthentication {
+    /*
+    CKContainer *container = [CKContainer defaultContainer];
+    CKDatabase  *publicDB = [container publicCloudDatabase];
+    
+    fetchedUserCKRecord = ^(CKRecord *userRecord, NSError *error) {
+        NSLog(@"fetched user record");
+        if (error) {
+            NSLog(@"CloudKit error: %@", error);
+        } else {
+            self.myRecord = userRecord;
+            self.iCloudUserID = userRecord.recordID.recordName;
+        }
+        
+    };
+    */
+    
+    [[CKContainer defaultContainer] fetchUserRecordIDWithCompletionHandler:^(CKRecordID *recordID, NSError *error) {
+        NSLog(@"fetching userRecordId");
+        if (error) {
+            NSLog(@"CloudKit error: %@", error);
+        } else {
+            self.iCloudUserID = recordID.recordName;
+            NSLog(@"icloud id is %@", self.iCloudUserID);
+            //[publicDB fetchRecordWithID:recordID completionHandler:fetchedUserCKRecord];
+        }
+    }];
 }
 
 #pragma mark URL handling
