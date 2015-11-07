@@ -33,7 +33,8 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
     // Override point for customization after application launch.
     
 #ifdef DEBUG
-    [CleverTap setDebugLevel:1277182231];
+    //[CleverTap setDebugLevel:1277182231];
+    [CleverTap setDebugLevel:1];
 #endif
     
     [CleverTap notifyApplicationLaunchedWithOptions:launchOptions];
@@ -54,22 +55,6 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
     
     [[UIApplication sharedApplication] registerForRemoteNotifications];
     
-    
-    NSInteger seconds = [[NSTimeZone localTimeZone] secondsFromGMT];
-    NSInteger hoursOffset = seconds/3600;
-    NSLog(@"hours is %ld", (long) hoursOffset);
-    
-    NSDictionary *_profile = @{
-                               @"personalityType":@"water",
-                               @"timeZone": [NSString stringWithFormat:@"UTC%ld", hoursOffset],
-                               @"Email":@"peter@clevertap.com"
-                               };
-    
-    NSMutableDictionary *profile = [NSMutableDictionary dictionaryWithDictionary:_profile];
-    
-    NSLog(@"profile is %@", profile);
-    [[CleverTap push] profile:profile];
-    
     // init aws
     AWSCognitoCredentialsProvider *credentialsProvider = [[AWSCognitoCredentialsProvider alloc] initWithRegionType:AWSRegionUSEast1 identityPoolId:@"us-east-1:1a357948-2716-4c63-abdf-2711d9c5cefe"];
     
@@ -77,11 +62,38 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
                                                                          credentialsProvider:credentialsProvider];
     AWSServiceManager.defaultServiceManager.defaultServiceConfiguration = configuration;
     
-    // test calling the AWS Lambda Demo API
+    // check for notification
+    NSDictionary *notification = [launchOptions objectForKey:UIApplicationLaunchOptionsRemoteNotificationKey];
+    
+    if(notification) {
+        [self application:application didReceiveRemoteNotificationFromLaunch:notification];
+    }
+    
+    [self setProfile];
+    
+    return YES;
+}
+
+# pragma mark CT Profile
+-(void)setProfile {
+    
+    
+    NSInteger seconds = [[NSTimeZone localTimeZone] secondsFromGMT];
+    NSInteger hoursOffset = seconds/3600;
+    NSLog(@"hours is %ld", (long) hoursOffset);
+    
+    
+    NSMutableDictionary *profile = [NSMutableDictionary dictionaryWithObjects:@[@"earth", [NSString stringWithFormat:@"UTC%ld", hoursOffset], [UIDevice currentDevice].name] forKeys:@[@"personalityType", @"timeZone", @"deviceName"]];
+    
+    NSLog(@"profile is %@", profile);
+    [[CleverTap push] profile:profile];
+}
+
+-(void)fetchQuote:(NSString*)quoteId {
     AWSLambdaInvoker *lambdaInvoker = [AWSLambdaInvoker defaultLambdaInvoker];
     
     NSDictionary *parameters = @{@"operation" : @"fetchQuoteFromId",
-                                 @"quoteId"   : @"1",
+                                 @"quoteId"   : quoteId,
                                  @"isError"   : @NO};
     
     [[lambdaInvoker invokeFunction:@"DemoAPI"
@@ -96,60 +108,45 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
             NSLog(@"Result: %@", task.result);
             
             dispatch_async(dispatch_get_main_queue(), ^{
-                //[self printOutputJSON:task.result];
+                [self displayQuote:task.result];
             });
         }
         return nil;
     }];
-    
-    [self handleCloudKitAuthentication];
-    
-    return YES;
 }
 
-# pragma mark CloudKit
--(void) handleCloudKitAuthentication {
-    /*
-    CKContainer *container = [CKContainer defaultContainer];
-    CKDatabase  *publicDB = [container publicCloudDatabase];
-    
-    fetchedUserCKRecord = ^(CKRecord *userRecord, NSError *error) {
-        NSLog(@"fetched user record");
-        if (error) {
-            NSLog(@"CloudKit error: %@", error);
-        } else {
-            self.myRecord = userRecord;
-            self.iCloudUserID = userRecord.recordID.recordName;
-        }
-        
-    };
-    */
-    
-    [[CKContainer defaultContainer] fetchUserRecordIDWithCompletionHandler:^(CKRecordID *recordID, NSError *error) {
-        NSLog(@"fetching userRecordId");
-        if (error) {
-            NSLog(@"CloudKit error: %@", error);
-        } else {
-            self.iCloudUserID = recordID.recordName;
-            NSLog(@"icloud id is %@", self.iCloudUserID);
-            //[publicDB fetchRecordWithID:recordID completionHandler:fetchedUserCKRecord];
-        }
-    }];
+
+-(void)displayQuote:(NSString*)quote {
+
+    UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"QOTD"
+                                                    message:quote
+                                                   delegate:self
+                                          cancelButtonTitle:@"Close"
+                                          otherButtonTitles:nil];
+    [alert show];
 }
 
 #pragma mark URL handling
-
 - (BOOL)application:(UIApplication *)application
             openURL:(NSURL *)url
   sourceApplication:(NSString *)sourceApplication
          annotation:(id)annotation {
     
-    NSString *link = url.description;
-    NSString *message = [NSString stringWithFormat:@"The app %@ asked me to open the URL: %@", sourceApplication, link];
-    NSLog(@"%@", message);
+    NSLog(@"open url %@", url.description);
     [CleverTap handleOpenURL:url sourceApplication:sourceApplication];
     
-    return YES;
+    NSString *scheme = [url scheme];
+    
+    if([scheme isEqualToString:@"ctdemo"]) {
+        NSString *host = [url host];
+        NSString *path = [[url path] stringByReplacingOccurrencesOfString:@"/" withString:@""];
+        if([host isEqualToString:@"quote"]) {
+            [self fetchQuote:path];
+            return YES;
+        }
+    }
+    
+    return NO;
 }
 
 # pragma mark Push Notifications
@@ -157,8 +154,9 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
 - (void)application:(UIApplication *)application
 didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
     NSLog(@"Lifecycle: application:didRegisterForRemoteNotificationsWithDeviceToken:");
-    [CleverTap setPushToken:deviceToken];
     NSLog(@"APNs device token %@", deviceToken);
+    [CleverTap setPushToken:deviceToken];
+    
 }
 
 -(void)application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(NSError *)error {
@@ -166,10 +164,31 @@ didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
 }
 
 
+-(void) application:(UIApplication *)application didReceiveRemoteNotificationFromLaunch:(NSDictionary *)userInfo {
+    // don't do anything if we are active when the notification is received
+    if (application.applicationState == UIApplicationStateActive) return ;
+    
+    __block NSDictionary *_userInfo = userInfo;
+    
+    dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC * 0.5);
+    dispatch_after(delay, dispatch_get_main_queue(), ^(void){
+         [self application:application didReceiveRemoteNotification:_userInfo];
+    });
+   
+}
+
 - (void) application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo {
     NSLog(@"I received a push notification!");
     NSLog(@"didReceiveRemoteNotification: UserInfo: %@", userInfo);
+    
+    if (application.applicationState == UIApplicationStateActive) return ;
+    
     [CleverTap handleNotificationWithData:userInfo];
+    
+    NSString *quoteId = [userInfo objectForKey:@"q"];
+    if(quoteId) {
+         [self fetchQuote:quoteId];
+    }
 }
 
 - (void) application:(UIApplication *)application didReceiveLocalNotification:(UILocalNotification *)notification {
