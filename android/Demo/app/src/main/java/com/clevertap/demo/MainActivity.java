@@ -1,5 +1,6 @@
 package com.clevertap.demo;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
@@ -9,9 +10,13 @@ import android.util.Log;
 import android.view.View;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.content.Intent;
 
 import android.os.AsyncTask;
 import android.widget.Toast;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.DialogInterface.OnClickListener;
 
 import com.clevertap.android.sdk.CleverTapAPI;
 import com.clevertap.android.sdk.exceptions.CleverTapMetaDataNotFoundException;
@@ -19,6 +24,7 @@ import com.clevertap.android.sdk.exceptions.CleverTapPermissionsNotSatisfied;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.TimeZone;
 import java.util.Map;
 
@@ -27,7 +33,6 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.mobileconnectors.lambdainvoker.LambdaInvokerFactory;
 
 import com.clevertap.demo.lambda.ILambdaInvoker;
-
 
 public class MainActivity extends AppCompatActivity {
 
@@ -53,7 +58,8 @@ public class MainActivity extends AppCompatActivity {
 
         try {
             // CleverTap
-            CleverTapAPI.setDebugLevel(1277182231);
+            //CleverTapAPI.setDebugLevel(1277182231);
+            CleverTapAPI.setDebugLevel(1);
             ct = CleverTapAPI.getInstance(getApplicationContext());
             ct.enablePersonalization();
 
@@ -90,11 +96,39 @@ public class MainActivity extends AppCompatActivity {
         // Create the Lambda proxy object with a default Json data binder.
         lambda = factory.build(ILambdaInvoker.class);
 
-        //pingLambda();
-        fetchQuote("123456");
+        if(savedInstanceState == null) {
+            handleIntent();
+        }
 
     }
 
+    private void handleIntent() {
+        Intent intent = getIntent();
+        if (intent.getAction().equals(Intent.ACTION_VIEW)) {
+            Uri data = intent.getData();
+            if (data != null) {
+                handleDeepLink(data);
+            }
+        }
+    }
+    // handle deep links
+    private void handleDeepLink(Uri data) {
+        //To get scheme.
+        String scheme = data.getScheme();
+
+        if(scheme.equals("ctdemo")) {
+            //To get server name.
+            String host = data.getHost();
+            if(host.equals("quote")) {
+                // get path components
+                List<String> pathSegments = data.getPathSegments();
+                String quoteId = pathSegments.get(0);
+                fetchQuote(quoteId);
+            }
+
+        }
+
+    }
 
     // ping the lambda function
     @SuppressWarnings("unchecked")
@@ -158,12 +192,26 @@ public class MainActivity extends AppCompatActivity {
                     return;
                 }
 
-                // Display a quick message
-                Toast.makeText(MainActivity.this,result, Toast.LENGTH_LONG).show();
+                new AlertDialog.Builder(MainActivity.this)
+                        .setTitle("QOTD")
+                        .setMessage(result)
+                        .setCancelable(false)
+                        .setPositiveButton("ok", new OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                // whatever...
+                            }
+                        }).create().show();
             }
         }.execute(event);
     }
 
+    @Override
+    public void onNewIntent(Intent intent){
+        super.onNewIntent(intent);
+        handleIntent();
+
+    }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
