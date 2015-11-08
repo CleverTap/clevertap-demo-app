@@ -97,16 +97,17 @@ public class MainActivity extends AppCompatActivity {
         lambda = factory.build(ILambdaInvoker.class);
 
         if(savedInstanceState == null) {
-            handleIntent();
+            handleIntent(getIntent());
         }
 
     }
 
-    private void handleIntent() {
-        Intent intent = getIntent();
+    private void handleIntent(Intent intent) {
+
         if (intent.getAction().equals(Intent.ACTION_VIEW)) {
             Uri data = intent.getData();
             if (data != null) {
+                Log.d("INTENT_URI", data.toString());
                 handleDeepLink(data);
             }
         }
@@ -209,7 +210,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     public void onNewIntent(Intent intent){
         super.onNewIntent(intent);
-        handleIntent();
+        handleIntent(intent);
 
     }
 
