@@ -170,7 +170,7 @@ didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
     
     __block NSDictionary *_userInfo = userInfo;
     
-    dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC * 0.5);
+    dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, NSEC_PER_SEC * 1.0);
     dispatch_after(delay, dispatch_get_main_queue(), ^(void){
          [self application:application didReceiveRemoteNotification:_userInfo];
     });
