@@ -153,7 +153,6 @@ class CleverTap(object):
             logger.error("api url is None")
             return None
 
-        print self.url
         # its always a POST request
         headers_params = kwargs.get('headers_params', {}) 
         args = urllib.urlencode(kwargs.get('args', {}))
@@ -172,8 +171,6 @@ class CleverTap(object):
             response = f.read()
             # Close the opened request
             f.close()
-
-            logger.info(response)
 
         except Exception, e:
             logger.error(e)

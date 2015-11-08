@@ -1,8 +1,11 @@
 from clevertap import CleverTap
+
 import time
 import datetime
+
 import boto3
 from boto3.dynamodb.conditions import Key, Attr
+
 import random
 
 import logging
@@ -35,7 +38,7 @@ def handler (event, context):
     
     if dynamo is None:
         logger.info("dynamo connection error")
-        #return False
+        return False
 
     # operate on some dates
     # from date is an arbitrary start date 
@@ -49,6 +52,7 @@ def handler (event, context):
     # add one as we will run this just before the hour
     hour_offset = 9 - (utc_now.hour+1)
     tz_string = "UTC%s" % hour_offset
+    tz_string = "UTC-8"
 
     query = {'event_name': 'App Launched',
             'from': from_date,
@@ -59,67 +63,82 @@ def handler (event, context):
                         'operator': 'equals',
                         'value': tz_string
                         },
+
                     ]
                 }
             }
 
     res = clevertap.profiles(query)
 
+    quotes_cache = {}
+
     for profile_array in res:
-        for profile in profile_array:
-            object_id = profile.get("cookie", None)
 
-            if not object_id:
-                continue
+        if len(profile_array) <= 0:
+            continue
 
-            personality_type = profile.get("pv", {}).get("personalityType", "water")
+        profile = profile_array[0]
+        object_id = profile.get("cookie", None)
 
-            # TODO: prevent dupes
+        if not object_id:
+            continue
 
+        personality_type = profile.get("pv", {}).get("personalityType", "water")
+
+        item = quotes_cache.get(personality_type, None)
+
+        if item:
+            quote = item['quote']
+            quote_id = item['quote_id']
+
+        else:
             try:
                 query_response = dynamo.query(TableName=TABLE_NAME, IndexName=INDEX_NAME, KeyConditionExpression=Key('p_type').eq(personality_type))
-                logger.info(query_response)
                 items = query_response.get("Items", [])
                 item = random.choice(items)
                 quote = item.get("quote")
                 quote_id = item.get("quote_id")
+
             except Exception, e:
                 logger.error(e)
                 quote = None 
                 quote_id = None 
 
-            if not quote or not quote_id:
-                continue
+            if quote and quote_id:
+                quotes_cache[personality_type] = item 
 
-            # update profile and push actions into CT to trigger messaging
-            data = []
-            ts = int(time.time())
-            has_email = profile.get("em", False)
+        if not quote or not quote_id:
+            continue
 
-            data.append({'type': 'profile',
-                        'WZRK_G': object_id,
-                        'ts': ts,
-                        'profileData': {'quoteId': quote_id}
-                        }) 
+        # update profile and push actions into CT to trigger messaging
+        data = []
+        ts = int(time.time())
+        has_email = profile.get("em", False)
 
+        data.append({'type': 'profile',
+                    'WZRK_G': object_id,
+                    'ts': ts,
+                    'profileData': {'quoteId': quote_id}
+                    }) 
+
+        data.append({'type': 'event',
+                    'WZRK_G': object_id,
+                    'ts': ts,
+                    'evtName': 'newQuote',
+                    'evtData': {"value":quote, "quoteId":quote_id}
+                    })
+
+        if has_email:
             data.append({'type': 'event',
-                        'WZRK_G': object_id,
-                        'ts': ts,
-                        'evtName': 'newQuote',
-                        'evtData': {"value":quote}
-                        })
+                    'WZRK_G': object_id,
+                    'ts': ts,
+                    'evtName': 'newQuoteEmail',
+                    'evtData': {"value":quote}
+                    })
 
-            if has_email:
-                data.append({'type': 'event',
-                        'WZRK_G': object_id,
-                        'ts': ts,
-                        'evtName': 'newQuoteEmail',
-                        'evtData': {"value":quote}
-                        })
-
-            if len(data) > 0:
-                clevertap.up(data)
-        
+        if len(data) > 0:
+            clevertap.up(data)
+    
     return True    
 
 if __name__ == '__main__':
