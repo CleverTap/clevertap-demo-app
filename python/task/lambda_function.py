@@ -52,7 +52,6 @@ def handler (event, context):
     # add one as we will run this just before the hour
     hour_offset = 9 - (utc_now.hour+1)
     tz_string = "UTC%s" % hour_offset
-    tz_string = "UTC-8"
 
     query = {'event_name': 'App Launched',
             'from': from_date,
