@@ -71,6 +71,9 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
     
     [self setProfile];
     
+    NSString *quoteId = [[CleverTap profile] getProperty:@"quoteId"];
+    [self fetchQuote:quoteId];
+    
     return YES;
 }
 
@@ -91,10 +94,24 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
 
 -(void)fetchQuote:(NSString*)quoteId {
     AWSLambdaInvoker *lambdaInvoker = [AWSLambdaInvoker defaultLambdaInvoker];
+    NSDictionary *parameters;
     
-    NSDictionary *parameters = @{@"operation" : @"fetchQuoteFromId",
-                                 @"quoteId"   : quoteId,
-                                 @"isError"   : @NO};
+    if(quoteId) {
+         parameters = @{@"operation" : @"fetchQuoteFromId",
+                                     @"quoteId"   : quoteId,
+                                     @"isError"   : @NO};
+
+    } else {
+        NSString *type = [[CleverTap profile] getProperty:@"personalityType"];
+        if(type) {
+            parameters = @{@"operation" : @"fetchQuoteForType",
+                           @"p_type"   : type,
+                           @"isError"   : @NO};
+        }
+        
+    }
+    
+    if(!parameters) return ;
     
     [[lambdaInvoker invokeFunction:@"DemoAPI"
                         JSONObject:parameters] continueWithBlock:^id(AWSTask *task) {
@@ -116,10 +133,10 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
 }
 
 
--(void)displayQuote:(NSString*)quote {
+-(void)displayQuote:(NSDictionary*)quote {
 
     UIAlertView *alert = [[UIAlertView alloc] initWithTitle:@"QOTD"
-                                                    message:quote
+                                                    message:[quote objectForKey:@"quote"]
                                                    delegate:self
                                           cancelButtonTitle:@"Close"
                                           otherButtonTitles:nil];

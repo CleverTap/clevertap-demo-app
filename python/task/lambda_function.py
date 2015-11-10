@@ -18,6 +18,9 @@ INDEX_NAME = "PersonalityTypeIndex"
 CT_ACCOUNT_ID = "6Z8-64Z-644Z"
 CT_ACCOUNT_PASSCODE = "WVE-SAD-OAAL"
 
+
+QUOTE_BYTE_LENGTH = 40
+
 try:
     clevertap = CleverTap(CT_ACCOUNT_ID, CT_ACCOUNT_PASSCODE)
 except Exception, e:
@@ -29,6 +32,33 @@ try:
 except Exception, e:
     logger.error(e)
     dynamo = None
+
+LENGTH_BY_PREFIX = [
+  (0xC0, 2), # first byte mask, total codepoint length
+  (0xE0, 3), 
+  (0xF0, 4),
+  (0xF8, 5),
+  (0xFC, 6),
+]
+
+def codepoint_length(first_byte):
+    if first_byte < 128:
+        return 1 # ASCII
+    for mask, length in LENGTH_BY_PREFIX:
+        if first_byte & mask == mask:
+            return length
+    assert False, 'Invalid byte %r' % first_byte
+
+def cut_to_bytes_length(unicode_text, byte_limit):
+    utf8_bytes = unicode_text.encode('UTF-8')
+    cut_index = 0
+    while cut_index < len(utf8_bytes):
+        step = codepoint_length(ord(utf8_bytes[cut_index]))
+        if cut_index + step > byte_limit:
+            return utf8_bytes[:cut_index]
+        else:
+            cut_index += step
+    return utf8_bytes
 
 def handler (event, context):
 
@@ -104,11 +134,18 @@ def handler (event, context):
                 quote_id = None 
 
             if quote and quote_id:
+                # truncate quote if need be
+                byte_length = len(quote.encode('utf-8'))
+                if byte_length > QUOTE_BYTE_LENGTH:
+                    quote = cut_to_bytes_length(quote, QUOTE_BYTE_LENGTH-3)
+                    quote = quote +"..."
+                    item['quote'] = quote
+
                 quotes_cache[personality_type] = item 
 
         if not quote or not quote_id:
             continue
-
+        
         # update profile and push actions into CT to trigger messaging
         data = []
         ts = int(time.time())
