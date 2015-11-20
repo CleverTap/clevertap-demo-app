@@ -2,26 +2,25 @@ package com.clevertap.demo;
 
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.design.widget.FloatingActionButton;
-import android.support.design.widget.Snackbar;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.widget.TextView;
 import android.widget.Toast;
 import android.view.View;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.content.Intent;
-
+import android.text.TextUtils;
 import android.os.AsyncTask;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 
 import com.clevertap.android.sdk.CleverTapAPI;
+import com.clevertap.android.sdk.NakedAPIListener;
 import com.clevertap.android.sdk.exceptions.CleverTapMetaDataNotFoundException;
 import com.clevertap.android.sdk.exceptions.CleverTapPermissionsNotSatisfied;
 
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -34,13 +33,19 @@ import com.amazonaws.mobileconnectors.lambdainvoker.LambdaInvokerFactory;
 
 import com.clevertap.demo.lambda.ILambdaInvoker;
 
-import org.json.JSONArray;
-import org.json.JSONObject;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, NakedAPIListener {
 
     private CleverTapAPI clevertap;
     private ILambdaInvoker lambda;
+
+    private TextView textView;
+    private TextView authorView;
+    private String currentQuoteId;
+    private String currentQuote;
+    private String currentAuthor;
+    private ArrayList<String> lastQuotesViewed;
+    Boolean runningQuoteFromIntent = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -49,14 +54,9 @@ public class MainActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-        FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.fab);
-        fab.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
-                        .setAction("Action", null).show();
-            }
-        });
+        textView = (TextView)findViewById(R.id.quote_view);
+
+        authorView = (TextView)findViewById(R.id.author_view);
 
         initCleverTap();
 
@@ -64,22 +64,70 @@ public class MainActivity extends AppCompatActivity {
         initWebService();
 
         // TODO temp; replace with UI
+        inflateLastQuotesViewed();
+
         String personalityType = clevertap.profile.getProperty("personalityType");
-        if(personalityType == null) {
-            // TODO show UI here
-            setProfile("water");
-        }
-        else {
+        if(personalityType != null) {
             displayLatestQuote();
         }
 
         if(savedInstanceState == null) {
             handleIntent(getIntent());
         }
+    }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        runningQuoteFromIntent = false;
+        persistQuotesViewed();
+    }
+
+
+    @Override
+    public void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+    }
+
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+        }
     }
 
     // CleverTap
+
+    // NakedAPIListener
+    public void profileDataUpdated(){
+        Log.d("PROFILE_UPDATE_TAG", "profileDataUpdated got called");
+
+        String personalityType = clevertap.profile.getProperty("personalityType");
+
+        if(personalityType == null) {
+            // TODO show UI here
+            Log.d("PR_GET_TYPE", "is null");
+            setProfile("water");
+            displayLatestQuote();
+        }
+        else {
+            Log.d("PR_GET_TYPE", personalityType);
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (!runningQuoteFromIntent) {
+                        displayLatestQuote();
+                    }
+
+                }
+            });
+        }
+    }
 
     private void initCleverTap() {
         try {
@@ -87,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
             CleverTapAPI.setDebugLevel(1277182231);
             //CleverTapAPI.setDebugLevel(1);
             clevertap = CleverTapAPI.getInstance(getApplicationContext());
-            clevertap.enablePersonalization();
+            clevertap.setNakedAPIListener(this);
 
         } catch (CleverTapMetaDataNotFoundException | CleverTapPermissionsNotSatisfied e) {
             // handle appropriately
@@ -112,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
 
         clevertap.profile.push(profileUpdate);
     }
+
 
     // webservice is via an AWS lambda function
 
@@ -165,8 +214,10 @@ public class MainActivity extends AppCompatActivity {
         }.execute(event);
     }
 
+    // quote handling
+
     @SuppressWarnings("unchecked")
-    private void fetchQuote(String quoteId) {
+    private void fetchQuote(final String quoteId) {
         // The Lambda function invocation results in a network call.
         // Make sure it is not called from the main thread.
         Map event = new HashMap();
@@ -211,25 +262,70 @@ public class MainActivity extends AppCompatActivity {
                     return ;
                 }
 
-                new AlertDialog.Builder(MainActivity.this)
-                        .setTitle("QOTD")
-                        .setMessage(quote)
-                        .setCancelable(false)
-                        .setPositiveButton("ok", new OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                // whatever...
-                            }
-                        }).create().show();
+                updateViewsForQuote(quoteId, quote, (String) result.get("by"));
+
             }
         }.execute(event);
     }
 
     @SuppressWarnings("unchecked")
     private void displayLatestQuote() {
+
         String quoteId = clevertap.profile.getProperty("quoteId");
-        fetchQuote(quoteId);
+
+        if (quoteId.equals(currentQuoteId)) {
+            updateViewsForQuote(currentQuoteId, currentQuote, currentAuthor);
+        } else {
+            fetchQuote(quoteId);
+        }
     }
+
+    private void updateViewsForQuote(String quoteId, String quote, String author) {
+
+        if(quote == null) {
+            return ;
+        }
+
+        currentQuoteId = quoteId;
+        currentQuote = quote;
+        currentAuthor = author != null ? author : "Unknown";
+
+        textView.setText(quote);
+
+        authorView.setText(currentAuthor);
+
+        updateLastQuotesViewed(quoteId);
+    }
+
+    private void inflateLastQuotesViewed() {
+        String quotesViewedString = clevertap.profile.getProperty("lastQuotesViewed");
+        quotesViewedString = quotesViewedString != null ? quotesViewedString : "";
+        lastQuotesViewed =  new ArrayList<String>(java.util.Arrays.asList(quotesViewedString.split(":")));
+        Log.d("PR_GET_QUOTES_VIEWED", lastQuotesViewed.toString());
+    }
+
+    private void persistQuotesViewed () {
+        String quotesViewedString = TextUtils.join(":", lastQuotesViewed);
+        HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
+        profileUpdate.put("lastQuotesViewed", quotesViewedString);
+        Log.d("PR_SET_QUOTES_VIEWED", quotesViewedString);
+
+        clevertap.profile.push(profileUpdate);
+    }
+
+    private void updateLastQuotesViewed(String quoteId) {
+        if( quoteId == null || lastQuotesViewed == null ||  lastQuotesViewed.contains(quoteId)) {
+            return ;
+
+        }
+        lastQuotesViewed.add(0, quoteId);
+        if(lastQuotesViewed.size() >= 10) {
+            lastQuotesViewed.subList(0, 9).clear();
+        }
+
+        Log.d("QUOTES_VIEWED_UPDATE", lastQuotesViewed.toString());
+    }
+
 
     // intents/deep links
 
@@ -256,39 +352,16 @@ public class MainActivity extends AppCompatActivity {
         String scheme = data.getScheme();
 
         if(scheme.equals("ctdemo")) {
-            //To get server name.
             String host = data.getHost();
             if(host.equals("quote")) {
                 // get path components
                 List<String> pathSegments = data.getPathSegments();
                 String quoteId = pathSegments.get(0);
+                runningQuoteFromIntent = true;
                 fetchQuote(quoteId);
             }
 
         }
 
-    }
-
-    // TODO remove
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
-        getMenuInflater().inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-        if (id == R.id.action_settings) {
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 }
