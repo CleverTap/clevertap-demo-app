@@ -7,6 +7,9 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		521F97F41C00D118005AC008 /* CleverTapSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 521F97F31C00D118005AC008 /* CleverTapSDK.framework */; };
+		521F97F61C00D136005AC008 /* CoreTelephony.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 521F97F51C00D136005AC008 /* CoreTelephony.framework */; };
+		521F97F81C00D13C005AC008 /* Security.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 521F97F71C00D13C005AC008 /* Security.framework */; };
 		52C96BEE1BE7F7A1002F6127 /* main.m in Sources */ = {isa = PBXBuildFile; fileRef = 52C96BED1BE7F7A1002F6127 /* main.m */; };
 		52C96BF11BE7F7A1002F6127 /* AppDelegate.m in Sources */ = {isa = PBXBuildFile; fileRef = 52C96BF01BE7F7A1002F6127 /* AppDelegate.m */; };
 		52C96BF41BE7F7A1002F6127 /* ViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 52C96BF31BE7F7A1002F6127 /* ViewController.m */; };
@@ -18,6 +21,9 @@
 
 /* Begin PBXFileReference section */
 		1E5FE18D614CBE927A5AA33B /* Pods.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = Pods.debug.xcconfig; path = "Pods/Target Support Files/Pods/Pods.debug.xcconfig"; sourceTree = "<group>"; };
+		521F97F31C00D118005AC008 /* CleverTapSDK.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CleverTapSDK.framework; path = Frameworks/CleverTapSDK.framework; sourceTree = "<group>"; };
+		521F97F51C00D136005AC008 /* CoreTelephony.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreTelephony.framework; path = System/Library/Frameworks/CoreTelephony.framework; sourceTree = SDKROOT; };
+		521F97F71C00D13C005AC008 /* Security.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Security.framework; path = System/Library/Frameworks/Security.framework; sourceTree = SDKROOT; };
 		52C96BE91BE7F7A1002F6127 /* Demo.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Demo.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		52C96BED1BE7F7A1002F6127 /* main.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = main.m; sourceTree = "<group>"; };
 		52C96BEF1BE7F7A1002F6127 /* AppDelegate.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = AppDelegate.h; sourceTree = "<group>"; };
@@ -37,6 +43,9 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				521F97F81C00D13C005AC008 /* Security.framework in Frameworks */,
+				521F97F61C00D136005AC008 /* CoreTelephony.framework in Frameworks */,
+				521F97F41C00D118005AC008 /* CleverTapSDK.framework in Frameworks */,
 				ADB2438DD1DD18A371C7BD31 /* libPods.a in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -65,6 +74,7 @@
 		52C96BEB1BE7F7A1002F6127 /* Demo */ = {
 			isa = PBXGroup;
 			children = (
+				521F97F31C00D118005AC008 /* CleverTapSDK.framework */,
 				52C96BEF1BE7F7A1002F6127 /* AppDelegate.h */,
 				52C96BF01BE7F7A1002F6127 /* AppDelegate.m */,
 				52C96BF21BE7F7A1002F6127 /* ViewController.h */,
@@ -89,6 +99,8 @@
 		67222F79A459587164EBEB19 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				521F97F71C00D13C005AC008 /* Security.framework */,
+				521F97F51C00D136005AC008 /* CoreTelephony.framework */,
 				9DC01DD4FE107FE77E65DB6C /* libPods.a */,
 			);
 			name = Frameworks;
@@ -334,6 +346,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Demo/Frameworks",
+				);
 				INFOPLIST_FILE = Demo/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
@@ -350,6 +366,10 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/Demo/Frameworks",
+				);
 				INFOPLIST_FILE = Demo/Info.plist;
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";

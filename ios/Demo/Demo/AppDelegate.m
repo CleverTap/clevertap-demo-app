@@ -8,6 +8,7 @@
 
 #import "AppDelegate.h"
 #import <CleverTapSDK/CleverTap.h>
+#import <CleverTapSDK/CleverTapNakedAPIDelegate.h>
 #import <AWSCore/AWSCore.h>
 #import <AWSCognito/AWSCognito.h>
 #import <AWSLambda/AWSLambda.h>
@@ -15,8 +16,8 @@
 
 void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
 
-@interface AppDelegate () {
-    
+@interface AppDelegate () <CleverTapNakedAPIDelegate> {
+    CleverTap *clevertap;
 }
 
 @property(nonatomic,retain) NSString *iCloudUserID;
@@ -33,14 +34,14 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
     // Override point for customization after application launch.
     
 #ifdef DEBUG
-    //[CleverTap setDebugLevel:1277182231];
-    [CleverTap setDebugLevel:1];
+    [CleverTap setDebugLevel:1277182231];
+    //[CleverTap setDebugLevel:1];
 #endif
     
-    [CleverTap notifyApplicationLaunchedWithOptions:launchOptions];
-    [CleverTap enablePersonalization];
+    clevertap = [CleverTap autoIntegrate];
+    [clevertap setNakedAPIDelegate:self];
     
-    NSDate *lastTimeAppLaunched = [[NSDate alloc] initWithTimeIntervalSince1970:[[CleverTap session] getPreviousVisitTime]];
+    NSDate *lastTimeAppLaunched = [[NSDate alloc] initWithTimeIntervalSince1970:[clevertap userGetPreviousVisitTime]];
     NSLog(@"last App Launch %@", lastTimeAppLaunched);
     
     // register for push notifications
@@ -71,13 +72,20 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
     
     [self setProfile];
     
-    NSString *quoteId = [[CleverTap profile] getProperty:@"quoteId"];
+    NSString *quoteId = [clevertap profileGet:@"quoteId"];
     [self fetchQuote:quoteId];
     
     return YES;
 }
 
 # pragma mark CT Profile
+
+# pragma mark Delegate
+
+- (void)profileDataUpdated {
+    NSLog(@"profileDataUpdated called");
+}
+
 -(void)setProfile {
     
     
@@ -89,7 +97,7 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
     NSMutableDictionary *profile = [NSMutableDictionary dictionaryWithObjects:@[@"earth", [NSString stringWithFormat:@"UTC%ld", hoursOffset], [UIDevice currentDevice].name] forKeys:@[@"personalityType", @"timeZone", @"deviceName"]];
     
     NSLog(@"profile is %@", profile);
-    [[CleverTap push] profile:profile];
+    [clevertap profilePush:profile];
 }
 
 -(void)fetchQuote:(NSString*)quoteId {
@@ -102,7 +110,7 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
                                      @"isError"   : @NO};
 
     } else {
-        NSString *type = [[CleverTap profile] getProperty:@"personalityType"];
+        NSString *type = [clevertap profileGet:@"personalityType"];
         if(type) {
             parameters = @{@"operation" : @"fetchQuoteForType",
                            @"p_type"   : type,
@@ -150,7 +158,6 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
          annotation:(id)annotation {
     
     NSLog(@"open url %@", url.description);
-    [CleverTap handleOpenURL:url sourceApplication:sourceApplication];
     
     NSString *scheme = [url scheme];
     
@@ -172,7 +179,6 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
 didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
     NSLog(@"Lifecycle: application:didRegisterForRemoteNotificationsWithDeviceToken:");
     NSLog(@"APNs device token %@", deviceToken);
-    [CleverTap setPushToken:deviceToken];
     
 }
 
@@ -200,8 +206,6 @@ didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
     
     if (application.applicationState == UIApplicationStateActive) return ;
     
-    [CleverTap handleNotificationWithData:userInfo];
-    
     NSString *quoteId = [userInfo objectForKey:@"q"];
     if(quoteId) {
          [self fetchQuote:quoteId];
@@ -212,7 +216,6 @@ didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
     
     NSLog(@"I received a local notification!");
     NSLog(@"didReceiveLocalNotification: UserInfo: %@", notification);
-    [CleverTap handleNotificationWithData:notification];
 }
 
 - (void)applicationWillResignActive:(UIApplication *)application {
