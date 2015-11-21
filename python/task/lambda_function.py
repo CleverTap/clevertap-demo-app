@@ -82,6 +82,11 @@ def handler (event, context):
     # add one as we will run this just before the hour
     hour_offset = 9 - (utc_now.hour+1)
     tz_string = "UTC%s" % hour_offset
+    if event and event.get("tz_string", None):
+        tz_string = event.get("tz_string")
+     
+    print tz_string 
+
 
     query = {'event_name': 'App Launched',
             'from': from_date,
@@ -169,7 +174,7 @@ def handler (event, context):
                     'WZRK_G': object_id,
                     'ts': ts,
                     'evtName': 'newQuoteEmail',
-                    'evtData': {"value":quote}
+                    'evtData': {"value":quote, "quoteId":quote_id}
                     })
 
         if len(data) > 0:
@@ -178,4 +183,4 @@ def handler (event, context):
     return True    
 
 if __name__ == '__main__':
-    handler(None, None)
+    handler({"tz_string":"UTC-8"}, None)
