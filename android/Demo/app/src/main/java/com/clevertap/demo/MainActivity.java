@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private TextView textView;
     private TextView authorView;
+    private String currentPersonalityType;
     private String currentQuoteId;
     private String currentQuote;
     private String currentAuthor;
@@ -63,10 +64,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // webservice access via AWS SDK
         initWebService();
 
-        // TODO temp; replace with UI
         inflateLastQuotesViewed();
 
         String personalityType = clevertap.profile.getProperty("personalityType");
+        Log.d("PR_GET_TYPE_INIT", personalityType != null ? personalityType : "is null");
         if(personalityType != null) {
             displayLatestQuote();
         }
@@ -149,6 +150,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             return ;
         }
 
+        currentPersonalityType = personalityType;
+
         TimeZone tz = TimeZone.getDefault();
         Date now = new Date();
         int offsetFromUtc = tz.getOffset(now.getTime()) / 1000;
@@ -161,6 +164,22 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         clevertap.profile.push(profileUpdate);
     }
 
+    private void checkSetProfileQuoteId(String quoteId) {
+
+        // only set it if it doesn't already exist on the profile
+        if(clevertap == null || quoteId == null) {
+            return;
+        }
+
+        if(clevertap.profile.getProperty("quoteId") != null) {
+            return;
+        }
+
+        HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
+        profileUpdate.put("quoteId", quoteId);
+
+        clevertap.profile.push(profileUpdate);
+    }
 
     // webservice is via an AWS lambda function
 
@@ -224,8 +243,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         if(quoteId == null) {
             String personalityType = clevertap.profile.getProperty("personalityType");
+            Log.d("PR_GET_TYPE", personalityType != null ? personalityType : "is null");
+            if(personalityType != null) {
+                currentPersonalityType = personalityType;
+            }
             event.put("operation", "fetchQuoteForType");
-            event.put("p_type", personalityType);
+            event.put("p_type", currentPersonalityType);
         } else {
             event.put("operation", "fetchQuoteFromId");
             event.put("quoteId", quoteId);
@@ -249,11 +272,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     return;
                 }
                 String quote = null;
+                String _quoteId = null;
 
                 Log.d("Lambda TAG", result.toString());
 
                 try {
                     quote = (String)result.get("quote");
+                    _quoteId = (String)result.get("quote_id");
                 } catch (Exception e) {
                     Log.d("ERROR_TAG", e.getLocalizedMessage());
                 }
@@ -262,7 +287,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     return ;
                 }
 
-                updateViewsForQuote(quoteId, quote, (String) result.get("by"));
+                updateViewsForQuote(_quoteId, quote, (String) result.get("by"));
 
             }
         }.execute(event);
@@ -273,7 +298,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         String quoteId = clevertap.profile.getProperty("quoteId");
 
-        if (quoteId.equals(currentQuoteId)) {
+        Log.d("PR_GET_QOT_ID", quoteId != null ? quoteId : "is null");
+
+        if (currentQuoteId != null && quoteId != null && quoteId.equals(currentQuoteId)) {
             updateViewsForQuote(currentQuoteId, currentQuote, currentAuthor);
         } else {
             fetchQuote(quoteId);
@@ -295,6 +322,8 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         authorView.setText(currentAuthor);
 
         updateLastQuotesViewed(quoteId);
+
+        checkSetProfileQuoteId(quoteId);
     }
 
     private void inflateLastQuotesViewed() {
