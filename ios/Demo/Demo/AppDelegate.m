@@ -8,7 +8,7 @@
 
 #import "AppDelegate.h"
 #import <CleverTapSDK/CleverTap.h>
-#import <CleverTapSDK/CleverTapNakedAPIDelegate.h>
+#import <CleverTapSDK/CleverTapSyncDelegate.h>
 #import <AWSCore/AWSCore.h>
 #import <AWSCognito/AWSCognito.h>
 #import <AWSLambda/AWSLambda.h>
@@ -16,7 +16,7 @@
 
 void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
 
-@interface AppDelegate () <CleverTapNakedAPIDelegate> {
+@interface AppDelegate () <CleverTapSyncDelegate> {
     CleverTap *clevertap;
 }
 
@@ -38,8 +38,13 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
     //[CleverTap setDebugLevel:1];
 #endif
     
+    [[NSNotificationCenter defaultCenter] addObserver:self
+                                             selector:@selector(didReceiveCleverTapProfileDidChangeNotification:)
+                                                 name:CleverTapProfileDidChangeNotification object:nil];
+    
+    
     clevertap = [CleverTap autoIntegrate];
-    [clevertap setNakedAPIDelegate:self];
+    [clevertap setSyncDelegate:self];
     
     NSDate *lastTimeAppLaunched = [[NSDate alloc] initWithTimeIntervalSince1970:[clevertap userGetPreviousVisitTime]];
     NSLog(@"last App Launch %@", lastTimeAppLaunched);
@@ -72,18 +77,44 @@ void(^fetchedUserCKRecord)(CKRecord *record, NSError *error);
     
     [self setProfile];
     
-    NSString *quoteId = [clevertap profileGet:@"quoteId"];
-    [self fetchQuote:quoteId];
+    [self updateQuote];
     
     return YES;
 }
 
 # pragma mark CT Profile
 
+-(void)didReceiveCleverTapProfileDidChangeNotification:(NSNotification*)notification {
+    NSDictionary *updates = notification.userInfo;
+    NSLog(@"didReceiveCleverTapProfileDidChangeNotification called with %@", updates);
+    [self parseAndHandleCleverTapProfileUpdates:updates];
+}
+
 # pragma mark Delegate
 
-- (void)profileDataUpdated {
-    NSLog(@"profileDataUpdated called");
+-(void)parseAndHandleCleverTapProfileUpdates:(NSDictionary*)updates {
+    NSDictionary *profile = [updates objectForKey:@"profile"];
+    //NSDictionary *events = [updates objectForKey:@"events"];
+    
+    if(profile) {
+        NSDictionary *quoteId = [profile objectForKey:@"quoteId"];
+        if(quoteId) {
+            NSString *newQuoteId = [quoteId objectForKey:@"newValue"];
+            if(newQuoteId) {
+                [self fetchQuote:newQuoteId];
+            }
+        }
+    }
+}
+
+- (void)profileDataUpdated:(NSDictionary*)updates {
+    NSLog(@"profileDataUpdated called with %@", updates);
+    [self parseAndHandleCleverTapProfileUpdates:updates];
+}
+
+-(void)updateQuote {
+    NSString *quoteId = [clevertap profileGet:@"quoteId"];
+    [self fetchQuote:quoteId];
 }
 
 -(void)setProfile {

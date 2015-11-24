@@ -5,7 +5,7 @@
 
 #import <Foundation/Foundation.h>
 
-@protocol CleverTapNakedAPIDelegate <NSObject>
+@protocol CleverTapSyncDelegate <NSObject>
 @required
-- (void)profileDataUpdated;
+- (void)profileDataUpdated:(NSDictionary*)updates;
 @end

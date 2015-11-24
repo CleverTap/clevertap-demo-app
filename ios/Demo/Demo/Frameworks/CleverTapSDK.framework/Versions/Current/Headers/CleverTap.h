@@ -3,10 +3,11 @@
 #import "CleverTapEventDetail.h"
 #import "CleverTapUTMDetail.h"
 
-@protocol CleverTapNakedAPIDelegate;
+@protocol CleverTapSyncDelegate;
 
 #pragma clang diagnostic push
 #pragma ide diagnostic ignored "OCUnusedMethodInspection"
+
 @interface CleverTap : NSObject
 
 /* ------------------------------------------------------------------------------------------------------
@@ -34,8 +35,12 @@ elsewhere in your code, you can use this singleton or call sharedInstance.
  Auto integrates CleverTap and initializes and returns a singleton instance of the API.
  
  @discussion
- This method will auto integrate CleverTap to automatically handle device token registration and push notification/url referrer tracking, and set up a singleton instance of the CleverTap class, when you want to make calls to CleverTap
- elsewhere in your code, you can use this singleton or call sharedInstance.
+ This method will auto integrate CleverTap to automatically handle device token registration and 
+ push notification/url referrer tracking, and set up a singleton instance of the CleverTap class, 
+ when you want to make calls to CleverTap elsewhere in your code, you can use this singleton or call sharedInstance.
+ 
+ This is accomplished by proxying the AppDelegate and "inserting" a CleverTap AppDelegate
+ behind the AppDelegate. The proxy will first call the AppDelegate and then call the CleverTap AppDelegate.
  
  */
 + (CleverTap *)autoIntegrate;
@@ -170,6 +175,16 @@ elsewhere in your code, you can use this singleton or call sharedInstance.
  */
 - (void)recordChargedEventWithDetails:(NSDictionary *)chargeDetails andItems:(NSArray *)items;
 
+/*!
+ @method
+ 
+ @abstract
+ Record an error event.
+ 
+ @param message           error message
+ @param code              int error code
+ */
+
 - (void)recordErrorWithMessage:(NSString *)message andErrorCode:(int)code;
 
 /*!
@@ -177,9 +192,6 @@ elsewhere in your code, you can use this singleton or call sharedInstance.
  
  @abstract
  Get the time of the first recording of the event.
- 
- @discussion
- Be sure to call enablePersonalization (typically once at app launch) prior to using this method.
  
  @param event           event name
  */
@@ -190,9 +202,6 @@ elsewhere in your code, you can use this singleton or call sharedInstance.
  
  @abstract
  Get the time of the last recording of the event.
- 
- @discussion
- Be sure to call enablePersonalization (typically once at app launch) prior to using this method.
  
  @param event           event name
  */
@@ -205,9 +214,6 @@ elsewhere in your code, you can use this singleton or call sharedInstance.
  @abstract
  Get the number of occurrences of the event.
  
- @discussion
- Be sure to call enablePersonalization (typically once at app launch) prior to using this method.
- 
  @param event           event name
  */
 - (int)eventGetOccurrences:(NSString *)event;
@@ -219,8 +225,6 @@ elsewhere in your code, you can use this singleton or call sharedInstance.
  Get the user's event history.
  
  @discussion
- Be sure to call enablePersonalization (typically once at app launch) prior to using this method.
- 
  Returns a dictionary of CleverTapEventDetail objects (eventName, firstTime, lastTime, occurrences), keyed by eventName.
  
  */
@@ -233,8 +237,6 @@ elsewhere in your code, you can use this singleton or call sharedInstance.
  Get the details for the event.
  
  @discussion
- Be sure to call enablePersonalization (typically once at app launch) prior to using this method.
- 
  Returns a CleverTapEventDetail object (eventName, firstTime, lastTime, occurrences)
  
  @param event           event name
@@ -249,9 +251,6 @@ elsewhere in your code, you can use this singleton or call sharedInstance.
  
  @abstract
  Get the elapsed time of the current user session.
- 
- @discussion
- Be sure to call enablePersonalization (typically once at app launch) prior to using this method.
  */
 - (NSTimeInterval)sessionGetTimeElapsed;
 
@@ -262,8 +261,6 @@ elsewhere in your code, you can use this singleton or call sharedInstance.
  Get the utm referrer details for this user session.
  
  @discussion
- Be sure to call enablePersonalization (typically once at app launch) prior to using this method.
- 
  Returns a CleverTapUTMDetail object (source, medium and campaign).
  
  */
@@ -274,9 +271,6 @@ elsewhere in your code, you can use this singleton or call sharedInstance.
  
  @abstract
  Get the total number of visits by this user.
- 
- @discussion
- Be sure to call enablePersonalization (typically once at app launch) prior to using this method.
  */
 - (int)userGetTotalVisits;
 
@@ -286,8 +280,6 @@ elsewhere in your code, you can use this singleton or call sharedInstance.
  @abstract
  Get the total screens viewed by this user.
  
- @discussion
- Be sure to call enablePersonalization (typically once at app launch) prior to using this method.
  */
 - (int)userGetScreenCount;
 
@@ -297,10 +289,45 @@ elsewhere in your code, you can use this singleton or call sharedInstance.
  @abstract
  Get the last prior visit time for this user.
  
- @discussion
- Be sure to call enablePersonalization (typically once at app launch) prior to using this method.
  */
 - (NSTimeInterval)userGetPreviousVisitTime;
+
+/* ------------------------------------------------------------------------------------------------------
+* Synchronization
+*/
+
+
+/**
+ @abstract Posted when the CleverTap User Profile has changed in repsonse to a synchronization call to the CleverTap servers.
+ 
+ @discussion 
+ CleverTap provides a flexible notification system for informing applications when changes have occured
+ to the CleverTap User Profile in response to synchronization activities.
+ 
+ CleverTap leverages the NSNotification broadcast mechanism to notify your application when changes occur.
+ Your application should observe CleverTapProfileDidChangeNotification in order to receive notifications.
+ 
+ */
+
+extern NSString *const CleverTapProfileDidChangeNotification;
+
+
+/*!
+ 
+ @method
+ 
+ @abstract The `CleverTapSyncDelegate` protocol provides an additional/alternative method for
+ notifying your application (the adopting delegate) about synchronization-related changes to the user profile.
+ 
+ @see CleverTapSyncDelegate.h
+ 
+ @discussion
+ This sets the CleverTapSyncDelegate.
+ 
+ @param delegate     an object conforming to the CleverTapSyncDelegate Protocol
+ */
+
+- (void)setSyncDelegate:(id <CleverTapSyncDelegate>)delegate;
 
 
 
@@ -418,9 +445,6 @@ elsewhere in your code, you can use this singleton or call sharedInstance.
  
  */
 - (void)changeCredentialsWithAccountID:(NSString *)accountID andToken:(NSString *)token;
-
-
-- (void)setNakedAPIDelegate:(id <CleverTapNakedAPIDelegate>)delegate;
 
 #pragma mark deprecations as of version 2.0.3
 
