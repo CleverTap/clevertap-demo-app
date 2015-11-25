@@ -112,13 +112,24 @@ def handler (event, context):
             continue
 
         profile = profile_array[0]
+        custom_vars = profile.get("pv", {})
         object_id = profile.get("cookie", None)
 
         if not object_id:
             continue
 
-        personality_type = profile.get("pv", {}).get("personalityType", "water")
+        personality_type = custom_vars.get("personalityType", None)
+        
+        if not personality_type:
+            continue
 
+        # set our messaging availability flags
+        can_push = custom_vars.get("canPush", True)
+
+        can_email = profile.get("em", False)
+        if can_email:
+            can_email = custom_vars.get("canEmail", True)
+        
         item = quotes_cache.get(personality_type, None)
 
         if item:
@@ -154,7 +165,6 @@ def handler (event, context):
         # update profile and push actions into CT to trigger messaging
         data = []
         ts = int(time.time())
-        has_email = profile.get("em", False)
 
         data.append({'type': 'profile',
                     'WZRK_G': object_id,
@@ -162,14 +172,15 @@ def handler (event, context):
                     'profileData': {'quoteId': quote_id}
                     }) 
 
-        data.append({'type': 'event',
-                    'WZRK_G': object_id,
-                    'ts': ts,
-                    'evtName': 'newQuote',
-                    'evtData': {"value":quote, "quoteId":quote_id}
-                    })
-
-        if has_email:
+        if can_push:
+            data.append({'type': 'event',
+                        'WZRK_G': object_id,
+                        'ts': ts,
+                        'evtName': 'newQuote',
+                        'evtData': {"value":quote, "quoteId":quote_id}
+                        })
+    
+        if can_email:
             data.append({'type': 'event',
                     'WZRK_G': object_id,
                     'ts': ts,
