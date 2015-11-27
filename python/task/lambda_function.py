@@ -122,13 +122,18 @@ def handler (event, context):
         
         if not personality_type:
             continue
-
+        
         # set our messaging availability flags
+        # push defaults to True
         can_push = custom_vars.get("canPush", True)
 
-        can_email = profile.get("em", False)
+        # if email + explicity canEmail set to True then trigger email for this user
+        email_address = profile.get("em", None) 
+
+        can_email = email_address is not None
         if can_email:
-            can_email = custom_vars.get("canEmail", True)
+            # email defaults to False
+            can_email = custom_vars.get("canEmail", False)
         
         item = quotes_cache.get(personality_type, None)
 
