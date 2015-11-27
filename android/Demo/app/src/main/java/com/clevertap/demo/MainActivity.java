@@ -2,8 +2,7 @@ package com.clevertap.demo;
 
 import android.net.Uri;
 import android.os.Bundle;
-import android.app.AlertDialog;
-import android.content.DialogInterface;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -13,10 +12,14 @@ import android.view.View;
 import android.content.Intent;
 import android.text.TextUtils;
 import android.os.AsyncTask;
+import android.view.MenuInflater;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.support.v4.app.FragmentManager;
 import android.content.DialogInterface.OnClickListener;
 
 import com.clevertap.android.sdk.CleverTapAPI;
-import com.clevertap.android.sdk.NakedAPIListener;
+import com.clevertap.android.sdk.SyncListener;
 import com.clevertap.android.sdk.exceptions.CleverTapMetaDataNotFoundException;
 import com.clevertap.android.sdk.exceptions.CleverTapPermissionsNotSatisfied;
 
@@ -33,14 +36,17 @@ import com.amazonaws.mobileconnectors.lambdainvoker.LambdaInvokerFactory;
 
 import com.clevertap.demo.lambda.ILambdaInvoker;
 
+import org.json.JSONException;
+import org.json.JSONObject;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener, NakedAPIListener {
+
+public class MainActivity extends AppCompatActivity implements SyncListener,
+        PersonalityTypeFormFragment.OnFragmentInteractionListener,
+        SettingsFragment.OnFragmentInteractionListener, FragmentManager.OnBackStackChangedListener {
 
     private CleverTapAPI clevertap;
     private ILambdaInvoker lambda;
 
-    private TextView textView;
-    private TextView authorView;
     private String currentPersonalityType;
     private String currentQuoteId;
     private String currentQuote;
@@ -48,16 +54,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     private ArrayList<String> lastQuotesViewed;
     Boolean runningQuoteFromIntent = false;
 
+    private static final String QUOTE_FRAG_TAG = "quoteFragTag";
+    private static final String PT_FORM_FRAG_TAG = "ptFormFragTag";
+    private static final String SETTINGS_FRAG_TAG = "settingsFragTag";
+
+    private Menu cachedMenu;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
-
-        textView = (TextView)findViewById(R.id.quote_view);
-
-        authorView = (TextView)findViewById(R.id.author_view);
 
         initCleverTap();
 
@@ -67,14 +75,19 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         inflateLastQuotesViewed();
 
         String personalityType = clevertap.profile.getProperty("personalityType");
-        Log.d("PR_GET_TYPE_INIT", personalityType != null ? personalityType : "is null");
-        if(personalityType != null) {
+        Log.d("PR_GET_TYPE", personalityType != null ? personalityType : "is null");
+        if (personalityType != null) {
             displayLatestQuote();
         }
 
-        if(savedInstanceState == null) {
+        if (savedInstanceState == null) {
             handleIntent(getIntent());
         }
+
+        // fragment nav
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        fragmentManager.addOnBackStackChangedListener(this);
+
     }
 
     @Override
@@ -96,28 +109,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
-    @Override
-    public void onClick(View v) {
-        switch (v.getId()) {
-        }
-    }
-
     // CleverTap
 
-    // NakedAPIListener
-    public void profileDataUpdated(){
-        Log.d("PROFILE_UPDATE_TAG", "profileDataUpdated got called");
-
+    // SyncListener
+    public void profileDataUpdated(JSONObject updates) {
         String personalityType = clevertap.profile.getProperty("personalityType");
+        Log.d("PR_GET_TYPE", personalityType != null ? personalityType : "personality type is null");
 
-        if(personalityType == null) {
-            // TODO show UI here
-            Log.d("PR_GET_TYPE", "is null");
-            setProfile("water");
-            displayLatestQuote();
-        }
-        else {
-            Log.d("PR_GET_TYPE", personalityType);
+        if (personalityType == null) {
+            showPersonalityTypeFormFragment();
+        } else {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
@@ -136,7 +137,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             CleverTapAPI.setDebugLevel(1277182231);
             //CleverTapAPI.setDebugLevel(1);
             clevertap = CleverTapAPI.getInstance(getApplicationContext());
-            clevertap.setNakedAPIListener(this);
+            clevertap.setSyncListener(this);
 
         } catch (CleverTapMetaDataNotFoundException | CleverTapPermissionsNotSatisfied e) {
             // handle appropriately
@@ -144,10 +145,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
     }
 
-    private void setProfile(String personalityType) {
+    public void setProfile(String personalityType) {
 
-        if(clevertap == null || personalityType == null) {
-            return ;
+        if (clevertap == null || personalityType == null) {
+            return;
         }
 
         currentPersonalityType = personalityType;
@@ -155,7 +156,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         TimeZone tz = TimeZone.getDefault();
         Date now = new Date();
         int offsetFromUtc = tz.getOffset(now.getTime()) / 1000;
-        int hours = offsetFromUtc/3600;
+        int hours = offsetFromUtc / 3600;
 
         HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
         profileUpdate.put("personalityType", personalityType);
@@ -164,14 +165,28 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         clevertap.profile.push(profileUpdate);
     }
 
+    // sets the do not disturb status:  pass false to prevent communications
+    public void setPushAvailability(Boolean on) {
+        HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
+        profileUpdate.put("canPush", on);
+        clevertap.profile.push(profileUpdate);
+    }
+
+    // sets the do not disturb status:  pass false to prevent communications
+    public void setEmailAvailability(Boolean on) {
+        HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
+        profileUpdate.put("canEmail", on);
+        clevertap.profile.push(profileUpdate);
+    }
+
     private void checkSetProfileQuoteId(String quoteId) {
 
         // only set it if it doesn't already exist on the profile
-        if(clevertap == null || quoteId == null) {
+        if (clevertap == null || quoteId == null) {
             return;
         }
 
-        if(clevertap.profile.getProperty("quoteId") != null) {
+        if (clevertap.profile.getProperty("quoteId") != null) {
             return;
         }
 
@@ -216,7 +231,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 try {
                     return lambda.ping(params[0]);
                 } catch (Exception e) {
-                    Log.e("Lambda Tag",e.getLocalizedMessage());
+                    Log.e("Lambda Tag", e.getLocalizedMessage());
                     return null;
 
                 }
@@ -241,10 +256,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         // Make sure it is not called from the main thread.
         Map event = new HashMap();
 
-        if(quoteId == null) {
+        if (quoteId == null) {
             String personalityType = clevertap.profile.getProperty("personalityType");
             Log.d("PR_GET_TYPE", personalityType != null ? personalityType : "is null");
-            if(personalityType != null) {
+            if (personalityType != null) {
                 currentPersonalityType = personalityType;
             }
             event.put("operation", "fetchQuoteForType");
@@ -260,7 +275,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 try {
                     return lambda.fetchQuote(params[0]);
                 } catch (Exception e) {
-                    Log.e("Lambda TAG",e.getLocalizedMessage());
+                    Log.e("Lambda TAG", e.getLocalizedMessage());
                     return null;
 
                 }
@@ -277,20 +292,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 Log.d("Lambda TAG", result.toString());
 
                 try {
-                    quote = (String)result.get("quote");
-                    _quoteId = (String)result.get("quote_id");
+                    quote = (String) result.get("quote");
+                    _quoteId = (String) result.get("quote_id");
                 } catch (Exception e) {
                     Log.d("ERROR_TAG", e.getLocalizedMessage());
                 }
 
-                if(quote == null) {
-                    return ;
+                if (quote == null) {
+                    return;
                 }
 
                 updateViewsForQuote(_quoteId, quote, (String) result.get("by"));
 
             }
         }.execute(event);
+    }
+
+    private void showPersonalityTypeFormFragment() {
+        showSettingsButton(false);
+        PersonalityTypeFormFragment ptFragment = PersonalityTypeFormFragment.newInstance(currentPersonalityType);
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fragment_container, ptFragment);
+        transaction.addToBackStack(PT_FORM_FRAG_TAG);
+        transaction.commit();
+    }
+
+    public void onFragmentInteractionPersonalityTypeForm(String personalityType) {
+        setProfile(personalityType);
+        displayLatestQuote();
     }
 
     @SuppressWarnings("unchecked")
@@ -309,31 +338,40 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void updateViewsForQuote(String quoteId, String quote, String author) {
 
-        if(quote == null) {
-            return ;
+        if (quote == null) {
+            return;
         }
 
         currentQuoteId = quoteId;
         currentQuote = quote;
+
         currentAuthor = author != null ? author : "Unknown";
 
-        textView.setText(quote);
-
-        authorView.setText(currentAuthor);
+        quote += "\n\n" + currentAuthor;
+        showQuoteFragment(quote);
 
         updateLastQuotesViewed(quoteId);
 
         checkSetProfileQuoteId(quoteId);
     }
 
+    private void showQuoteFragment(String quote) {
+        getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        showSettingsButton(true);
+        QuoteFragment quoteFragment = QuoteFragment.newInstance(quote);
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fragment_container, quoteFragment);
+        transaction.commit();
+    }
+
     private void inflateLastQuotesViewed() {
         String quotesViewedString = clevertap.profile.getProperty("lastQuotesViewed");
         quotesViewedString = quotesViewedString != null ? quotesViewedString : "";
-        lastQuotesViewed =  new ArrayList<String>(java.util.Arrays.asList(quotesViewedString.split(":")));
+        lastQuotesViewed = new ArrayList<String>(java.util.Arrays.asList(quotesViewedString.split(":")));
         Log.d("PR_GET_QUOTES_VIEWED", lastQuotesViewed.toString());
     }
 
-    private void persistQuotesViewed () {
+    private void persistQuotesViewed() {
         String quotesViewedString = TextUtils.join(":", lastQuotesViewed);
         HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
         profileUpdate.put("lastQuotesViewed", quotesViewedString);
@@ -343,12 +381,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
     private void updateLastQuotesViewed(String quoteId) {
-        if( quoteId == null || lastQuotesViewed == null ||  lastQuotesViewed.contains(quoteId)) {
-            return ;
+        if (quoteId == null || lastQuotesViewed == null || lastQuotesViewed.contains(quoteId)) {
+            return;
 
         }
         lastQuotesViewed.add(0, quoteId);
-        if(lastQuotesViewed.size() >= 10) {
+        if (lastQuotesViewed.size() >= 10) {
             lastQuotesViewed.subList(0, 9).clear();
         }
 
@@ -356,10 +394,34 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     }
 
 
+    // Settings
+
+    private void showSettingsFragment() {
+        showSettingsButton(false);
+        SettingsFragment settingsFragment = SettingsFragment.newInstance();
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fragment_container, settingsFragment);
+        transaction.addToBackStack(SETTINGS_FRAG_TAG);
+        transaction.commit();
+    }
+
+    public void onFragmentInteractionSettings(String action) {
+        if(action == null) {
+            displayLatestQuote();
+            return ;
+        }
+        
+        if(action.equals("showPTForm")) {
+            showPersonalityTypeFormFragment();
+        } else {
+            displayLatestQuote();
+        }
+    }
+
     // intents/deep links
 
     @Override
-    public void onNewIntent(Intent intent){
+    public void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         handleIntent(intent);
 
@@ -375,14 +437,15 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             }
         }
     }
+
     // handle deep links
     private void handleDeepLink(Uri data) {
         //To get scheme.
         String scheme = data.getScheme();
 
-        if(scheme.equals("ctdemo")) {
+        if (scheme.equals("ctdemo")) {
             String host = data.getHost();
-            if(host.equals("quote")) {
+            if (host.equals("quote")) {
                 // get path components
                 List<String> pathSegments = data.getPathSegments();
                 String quoteId = pathSegments.get(0);
@@ -392,5 +455,74 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         }
 
+    }
+
+    // options menu
+
+    private void showSettingsButton(Boolean show) {
+        try {
+            MenuItem item = cachedMenu.findItem(R.id.action_settings);
+            if(item != null) {
+                item.setVisible(show).setEnabled(show);
+            }
+        } catch (Exception e) {
+            // no-op
+        }
+
+
+
+    }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        cachedMenu = menu;
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+
+
+        int id = item.getItemId();
+
+        if (id == android.R.id.home) {
+            getSupportFragmentManager().popBackStack();
+            showSettingsButton(true);
+
+            return true;
+        }
+
+        if (id == R.id.action_settings) {
+            showSettingsFragment();
+            showSettingsButton(false);
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
+    @Override
+    public void onBackStackChanged() {
+        int stackHeight = getSupportFragmentManager().getBackStackEntryCount();
+        if (stackHeight > 0) {
+            try {
+                getSupportActionBar().setHomeButtonEnabled(true);
+                getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        } else {
+            try {
+                getSupportActionBar().setDisplayHomeAsUpEnabled(false);
+                getSupportActionBar().setHomeButtonEnabled(false);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
     }
 }
