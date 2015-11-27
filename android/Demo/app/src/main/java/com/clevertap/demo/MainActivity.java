@@ -410,7 +410,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             displayLatestQuote();
             return ;
         }
-        
+
         if(action.equals("showPTForm")) {
             showPersonalityTypeFormFragment();
         } else {
@@ -491,8 +491,6 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
         if (id == android.R.id.home) {
             getSupportFragmentManager().popBackStack();
-            showSettingsButton(true);
-
             return true;
         }
 
@@ -518,6 +516,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
         } else {
             try {
+                showSettingsButton(true);
                 getSupportActionBar().setDisplayHomeAsUpEnabled(false);
                 getSupportActionBar().setHomeButtonEnabled(false);
             } catch (Exception e) {
