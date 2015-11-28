@@ -11,7 +11,5 @@ import java.util.Map;
 
 public interface ILambdaInvoker {
     @LambdaFunction(functionName = "DemoAPI")
-    String ping(Map event);
-    @LambdaFunction(functionName = "DemoAPI")
     Map fetchQuote(Map event);
 }

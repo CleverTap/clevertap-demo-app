@@ -9,25 +9,66 @@
         android:layout_height="wrap_content"
         android:orientation = "vertical">
 
-        <Button
-            android:id="@+id/show_pt_form_button"
-            android:layout_width="wrap_content"
+        <Switch
+            android:id="@+id/push_switch"
+            android:textSize="20sp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/choose_pt"
-            android:minHeight="92dp"
-            android:textSize="22sp">
+            android:layout_marginTop="30dp"
+            android:minHeight="30dp"
+            android:text="@string/push_enabled" />
 
-        </Button>
-
-        <Button
-            android:id="@+id/submit_button"
-            android:layout_width="wrap_content"
+        <Switch
+            android:id="@+id/email_switch"
+            android:textSize="20sp"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="@string/done"
-            android:minHeight="92dp"
-            android:textSize="22sp">
 
-        </Button>
+            android:layout_marginTop="30dp"
+            android:minHeight="30dp"
+            android:text="@string/email_enabled" />
+
+        <EditText
+            android:id="@+id/email_address"
+            android:layout_width="fill_parent"
+            android:layout_height="wrap_content"
+            android:hint="@string/email_hint"
+            android:imeOptions="actionDone"
+            android:inputType="textEmailAddress" />
+
+        <TextView
+            android:id="@+id/pt_header"
+            android:layout_marginTop="20dp"
+            android:textSize="20sp"
+            android:layout_width="match_parent"
+            android:text = "@string/pt_header"
+            android:layout_height="wrap_content"/>
+
+        <LinearLayout
+            android:layout_marginTop="5dp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation = "horizontal">
+
+            <TextView
+                android:layout_marginTop="5dp"
+                android:id="@+id/personality_type"
+                android:textSize="30sp"
+                android:layout_width="220dp"
+                android:layout_height="wrap_content"/>
+
+            <Button
+                android:id="@+id/show_pt_form_button"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/choose_pt"
+                android:textSize="20sp">
+
+            </Button>
+
+         </LinearLayout>
+
+
 
     </LinearLayout>
 

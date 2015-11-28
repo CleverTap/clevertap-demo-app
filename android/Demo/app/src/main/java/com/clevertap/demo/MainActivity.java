@@ -1,22 +1,19 @@
 package com.clevertap.demo;
 
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
-import android.widget.TextView;
-import android.widget.Toast;
-import android.view.View;
 import android.content.Intent;
-import android.text.TextUtils;
 import android.os.AsyncTask;
 import android.view.MenuInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.support.v4.app.FragmentManager;
-import android.content.DialogInterface.OnClickListener;
 
 import com.clevertap.android.sdk.CleverTapAPI;
 import com.clevertap.android.sdk.SyncListener;
@@ -36,7 +33,6 @@ import com.amazonaws.mobileconnectors.lambdainvoker.LambdaInvokerFactory;
 
 import com.clevertap.demo.lambda.ILambdaInvoker;
 
-import org.json.JSONException;
 import org.json.JSONObject;
 
 
@@ -51,7 +47,6 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     private String currentQuoteId;
     private String currentQuote;
     private String currentAuthor;
-    private ArrayList<String> lastQuotesViewed;
     Boolean runningQuoteFromIntent = false;
 
     private static final String QUOTE_FRAG_TAG = "quoteFragTag";
@@ -60,24 +55,27 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
     private Menu cachedMenu;
 
+    // lifecycle
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
+        // initialize CleverTap
         initCleverTap();
 
         // webservice access via AWS SDK
         initWebService();
 
-        inflateLastQuotesViewed();
-
         String personalityType = clevertap.profile.getProperty("personalityType");
         Log.d("PR_GET_TYPE", personalityType != null ? personalityType : "is null");
         if (personalityType != null) {
-            displayLatestQuote();
+            currentPersonalityType = personalityType;
+            displayLatestQuote(false);
         }
 
         if (savedInstanceState == null) {
@@ -99,21 +97,15 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     protected void onStop() {
         super.onStop();
         runningQuoteFromIntent = false;
-        persistQuotesViewed();
     }
-
-
-    @Override
-    public void onActivityResult(int requestCode, int resultCode, Intent data) {
-        super.onActivityResult(requestCode, resultCode, data);
-    }
-
 
     // CleverTap
 
     // SyncListener
     public void profileDataUpdated(JSONObject updates) {
+
         String personalityType = clevertap.profile.getProperty("personalityType");
+        currentPersonalityType = personalityType;
         Log.d("PR_GET_TYPE", personalityType != null ? personalityType : "personality type is null");
 
         if (personalityType == null) {
@@ -123,7 +115,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
                 @Override
                 public void run() {
                     if (!runningQuoteFromIntent) {
-                        displayLatestQuote();
+                        displayLatestQuote(false);
                     }
 
                 }
@@ -132,6 +124,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     }
 
     private void initCleverTap() {
+
         try {
             // initialize CleverTap
             CleverTapAPI.setDebugLevel(1277182231);
@@ -166,27 +159,101 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     }
 
     // sets the do not disturb status:  pass false to prevent communications
-    public void setPushAvailability(Boolean on) {
+    public void setPushEnabled(Boolean on) {
+
         HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
         profileUpdate.put("canPush", on);
         clevertap.profile.push(profileUpdate);
     }
 
     // sets the do not disturb status:  pass false to prevent communications
-    public void setEmailAvailability(Boolean on) {
+    public void setEmailEnabled(Boolean on) {
+
         HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
         profileUpdate.put("canEmail", on);
         clevertap.profile.push(profileUpdate);
     }
 
-    private void checkSetProfileQuoteId(String quoteId) {
+    public Boolean getPushEnabled() {
+
+        String canPush = clevertap.profile.getProperty("canPush");
+        if(canPush == null) {
+            // push defaults to enabled
+            canPush = "true";
+        }
+
+        return Boolean.valueOf(canPush);
+    }
+
+    public Boolean getEmailEnabled() {
+        String canEmail = clevertap.profile.getProperty("canEmail");
+        if(canEmail == null) {
+            // email defaults to disabled
+            canEmail = "false";
+        }
+
+        return Boolean.valueOf(canEmail);
+    }
+
+    public String getEmailAddress() {
+        return clevertap.profile.getProperty("Email");
+    }
+
+    public String getPersonalityType() {
+        return clevertap.profile.getProperty("personalityType");
+
+    }
+
+    public int getPersonalityTypeColorId() {
+
+        int colorId = 0;
+        String pType = getPersonalityType();
+
+        if(pType != null) {
+            switch (pType) {
+                case "earth":
+                    colorId = ContextCompat.getColor(getApplicationContext(), R.color.earthseekbar_color);
+                    break;
+                case "fire":
+                    colorId = ContextCompat.getColor(getApplicationContext(), R.color.fireseekbar_color);
+                    break;
+                case "metal":
+                    colorId = ContextCompat.getColor(getApplicationContext(), R.color.metalseekbar_color);
+                    break;
+                case "water":
+                    colorId = ContextCompat.getColor(getApplicationContext(), R.color.waterseekbar_color);
+                    break;
+                case "wood":
+                    colorId = ContextCompat.getColor(getApplicationContext(), R.color.woodseekbar_color);
+                    break;
+
+            }
+        }
+
+        return colorId;
+
+    }
+
+    public void setEmailAddress(String email) {
+
+        if(email == null) {
+            return ;
+        }
+
+        HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
+        profileUpdate.put("Email", email);
+        profileUpdate.put("canEmail", true);
+        clevertap.profile.push(profileUpdate);
+    }
+
+    private void checkSetProfileQuoteId(String quoteId, Boolean force) {
 
         // only set it if it doesn't already exist on the profile
         if (clevertap == null || quoteId == null) {
             return;
         }
 
-        if (clevertap.profile.getProperty("quoteId") != null) {
+        if (!force && clevertap.profile.getProperty("quoteId") != null) {
             return;
         }
 
@@ -196,7 +263,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         clevertap.profile.push(profileUpdate);
     }
 
-    // webservice is via an AWS lambda function
+    // webservice is via AWS lambda function
 
     private void initWebService() {
         // Initialize the Amazon Cognito credentials provider
@@ -216,54 +283,20 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         lambda = factory.build(ILambdaInvoker.class);
     }
 
-    // ping the lambda function
-    @SuppressWarnings("unchecked")
-    private void pingLambda() {
-        Map event = new HashMap();
-        event.put("operation", "ping");
-        // The Lambda function invocation results in a network call.
-        // Make sure it is not called from the main thread.
-        new AsyncTask<Map, Void, String>() {
-            @Override
-            protected String doInBackground(Map... params) {
-                // invoke "ping"; method. In case it fails, it will throw a
-                // LambdaFunctionException.
-                try {
-                    return lambda.ping(params[0]);
-                } catch (Exception e) {
-                    Log.e("Lambda Tag", e.getLocalizedMessage());
-                    return null;
-
-                }
-            }
-
-            @Override
-            protected void onPostExecute(String result) {
-                if (result == null) {
-                    return;
-                }
-
-                Toast.makeText(MainActivity.this, "AWS lambda ping success", Toast.LENGTH_LONG).show();
-            }
-        }.execute(event);
-    }
-
     // quote handling
-
     @SuppressWarnings("unchecked")
-    private void fetchQuote(final String quoteId) {
+    private void fetchQuote(final String quoteId, String personalityType, final Boolean forceReset) {
         // The Lambda function invocation results in a network call.
         // Make sure it is not called from the main thread.
         Map event = new HashMap();
+
+        if(quoteId == null && personalityType == null) {
+            return ;
+        }
 
         if (quoteId == null) {
-            String personalityType = clevertap.profile.getProperty("personalityType");
-            Log.d("PR_GET_TYPE", personalityType != null ? personalityType : "is null");
-            if (personalityType != null) {
-                currentPersonalityType = personalityType;
-            }
             event.put("operation", "fetchQuoteForType");
-            event.put("p_type", currentPersonalityType);
+            event.put("p_type", personalityType);
         } else {
             event.put("operation", "fetchQuoteFromId");
             event.put("quoteId", quoteId);
@@ -302,41 +335,34 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
                     return;
                 }
 
-                updateViewsForQuote(_quoteId, quote, (String) result.get("by"));
+                updateViewsForQuote(_quoteId, quote, (String) result.get("by"), forceReset);
 
             }
         }.execute(event);
     }
 
-    private void showPersonalityTypeFormFragment() {
-        showSettingsButton(false);
-        PersonalityTypeFormFragment ptFragment = PersonalityTypeFormFragment.newInstance(currentPersonalityType);
-        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
-        transaction.replace(R.id.fragment_container, ptFragment);
-        transaction.addToBackStack(PT_FORM_FRAG_TAG);
-        transaction.commit();
-    }
-
-    public void onFragmentInteractionPersonalityTypeForm(String personalityType) {
-        setProfile(personalityType);
-        displayLatestQuote();
-    }
+    // UI/fragment handling
 
     @SuppressWarnings("unchecked")
-    private void displayLatestQuote() {
+    private void displayLatestQuote(Boolean forceReset) {
 
-        String quoteId = clevertap.profile.getProperty("quoteId");
+        if(forceReset) {
+            fetchQuote(null, currentPersonalityType, true);
 
-        Log.d("PR_GET_QOT_ID", quoteId != null ? quoteId : "is null");
-
-        if (currentQuoteId != null && quoteId != null && quoteId.equals(currentQuoteId)) {
-            updateViewsForQuote(currentQuoteId, currentQuote, currentAuthor);
         } else {
-            fetchQuote(quoteId);
+            String quoteId = clevertap.profile.getProperty("quoteId");
+            Log.d("PR_GET_QOT_ID", quoteId != null ? quoteId : "is null");
+
+            if (currentQuoteId != null && quoteId != null && quoteId.equals(currentQuoteId)) {
+                updateViewsForQuote(currentQuoteId, currentQuote, currentAuthor, forceReset);
+            } else {
+                fetchQuote(quoteId, currentPersonalityType, false);
+            }
         }
+
     }
 
-    private void updateViewsForQuote(String quoteId, String quote, String author) {
+    private void updateViewsForQuote(String quoteId, String quote, String author, Boolean forceReset) {
 
         if (quote == null) {
             return;
@@ -349,54 +375,45 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
         quote += "\n\n" + currentAuthor;
         showQuoteFragment(quote);
+        checkSetProfileQuoteId(quoteId, forceReset);
+    }
 
-        updateLastQuotesViewed(quoteId);
+    // fragments
 
-        checkSetProfileQuoteId(quoteId);
+    private void showPersonalityTypeFormFragment() {
+
+        showSettingsButton(false);
+        PersonalityTypeFormFragment ptFragment = PersonalityTypeFormFragment.newInstance(currentPersonalityType);
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        transaction.replace(R.id.fragment_container, ptFragment);
+        transaction.addToBackStack(PT_FORM_FRAG_TAG);
+        transaction.commit();
+    }
+
+    public void onFragmentInteractionPersonalityTypeForm(String personalityType) {
+
+        Boolean forceReset = false;
+        if (!personalityType.equals(currentPersonalityType)) {
+            currentPersonalityType = personalityType;
+            setProfile(personalityType);
+            forceReset = true;
+        }
+
+        displayLatestQuote(forceReset);
     }
 
     private void showQuoteFragment(String quote) {
+
         getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
         showSettingsButton(true);
-        QuoteFragment quoteFragment = QuoteFragment.newInstance(quote);
+        QuoteFragment quoteFragment = QuoteFragment.newInstance(quote, currentPersonalityType);
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragment_container, quoteFragment);
         transaction.commit();
     }
 
-    private void inflateLastQuotesViewed() {
-        String quotesViewedString = clevertap.profile.getProperty("lastQuotesViewed");
-        quotesViewedString = quotesViewedString != null ? quotesViewedString : "";
-        lastQuotesViewed = new ArrayList<String>(java.util.Arrays.asList(quotesViewedString.split(":")));
-        Log.d("PR_GET_QUOTES_VIEWED", lastQuotesViewed.toString());
-    }
-
-    private void persistQuotesViewed() {
-        String quotesViewedString = TextUtils.join(":", lastQuotesViewed);
-        HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
-        profileUpdate.put("lastQuotesViewed", quotesViewedString);
-        Log.d("PR_SET_QUOTES_VIEWED", quotesViewedString);
-
-        clevertap.profile.push(profileUpdate);
-    }
-
-    private void updateLastQuotesViewed(String quoteId) {
-        if (quoteId == null || lastQuotesViewed == null || lastQuotesViewed.contains(quoteId)) {
-            return;
-
-        }
-        lastQuotesViewed.add(0, quoteId);
-        if (lastQuotesViewed.size() >= 10) {
-            lastQuotesViewed.subList(0, 9).clear();
-        }
-
-        Log.d("QUOTES_VIEWED_UPDATE", lastQuotesViewed.toString());
-    }
-
-
-    // Settings
-
     private void showSettingsFragment() {
+
         showSettingsButton(false);
         SettingsFragment settingsFragment = SettingsFragment.newInstance();
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
@@ -406,105 +423,22 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     }
 
     public void onFragmentInteractionSettings(String action) {
+
         if(action == null) {
-            displayLatestQuote();
+            displayLatestQuote(false);
             return ;
         }
 
         if(action.equals("showPTForm")) {
             showPersonalityTypeFormFragment();
         } else {
-            displayLatestQuote();
+            displayLatestQuote(false);
         }
-    }
-
-    // intents/deep links
-
-    @Override
-    public void onNewIntent(Intent intent) {
-        super.onNewIntent(intent);
-        handleIntent(intent);
-
-    }
-
-    private void handleIntent(Intent intent) {
-
-        if (intent.getAction().equals(Intent.ACTION_VIEW)) {
-            Uri data = intent.getData();
-            if (data != null) {
-                Log.d("INTENT_URI", data.toString());
-                handleDeepLink(data);
-            }
-        }
-    }
-
-    // handle deep links
-    private void handleDeepLink(Uri data) {
-        //To get scheme.
-        String scheme = data.getScheme();
-
-        if (scheme.equals("ctdemo")) {
-            String host = data.getHost();
-            if (host.equals("quote")) {
-                // get path components
-                List<String> pathSegments = data.getPathSegments();
-                String quoteId = pathSegments.get(0);
-                runningQuoteFromIntent = true;
-                fetchQuote(quoteId);
-            }
-
-        }
-
-    }
-
-    // options menu
-
-    private void showSettingsButton(Boolean show) {
-        try {
-            MenuItem item = cachedMenu.findItem(R.id.action_settings);
-            if(item != null) {
-                item.setVisible(show).setEnabled(show);
-            }
-        } catch (Exception e) {
-            // no-op
-        }
-
-
-
-    }
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        cachedMenu = menu;
-        MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.menu_main, menu);
-        return true;
-    }
-
-    @Override
-    public boolean onOptionsItemSelected(MenuItem item) {
-        // Handle action bar item clicks here. The action bar will
-        // automatically handle clicks on the Home/Up button, so long
-        // as you specify a parent activity in AndroidManifest.xml.
-
-
-        int id = item.getItemId();
-
-        if (id == android.R.id.home) {
-            getSupportFragmentManager().popBackStack();
-            return true;
-        }
-
-        if (id == R.id.action_settings) {
-            showSettingsFragment();
-            showSettingsButton(false);
-            return true;
-        }
-
-        return super.onOptionsItemSelected(item);
     }
 
     @Override
     public void onBackStackChanged() {
+
         int stackHeight = getSupportFragmentManager().getBackStackEntryCount();
         if (stackHeight > 0) {
             try {
@@ -523,5 +457,94 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
                 e.printStackTrace();
             }
         }
+    }
+
+    // intents/deep links
+
+    @Override
+    public void onNewIntent(Intent intent) {
+
+        super.onNewIntent(intent);
+        handleIntent(intent);
+
+    }
+
+    private void handleIntent(Intent intent) {
+
+        if (intent.getAction().equals(Intent.ACTION_VIEW)) {
+            Uri data = intent.getData();
+            if (data != null) {
+                Log.d("INTENT_URI", data.toString());
+                handleDeepLink(data);
+            }
+        }
+    }
+
+    // handle deep links
+    private void handleDeepLink(Uri data) {
+
+        //To get scheme.
+        String scheme = data.getScheme();
+
+        if (scheme.equals("ctdemo")) {
+            String host = data.getHost();
+            if (host.equals("quote")) {
+                // get path components
+                List<String> pathSegments = data.getPathSegments();
+                String quoteId = pathSegments.get(0);
+                runningQuoteFromIntent = true;
+                fetchQuote(quoteId, currentPersonalityType, false);
+            }
+        }
+
+    }
+
+    // options menu
+
+    private void showSettingsButton(Boolean show) {
+
+        try {
+            MenuItem item = cachedMenu.findItem(R.id.action_settings);
+            if(item != null) {
+                item.setVisible(show).setEnabled(show);
+            }
+        } catch (Exception e) {
+            // no-op
+        }
+    }
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+
+        cachedMenu = menu;
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_main, menu);
+
+        //start with the settings button hidden
+        showSettingsButton(false);
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+
+        int id = item.getItemId();
+
+        if (id == android.R.id.home) {
+            getSupportFragmentManager().popBackStack();
+            return true;
+        }
+
+        if (id == R.id.action_settings) {
+            showSettingsFragment();
+            showSettingsButton(false);
+            return true;
+        }
+
+        return super.onOptionsItemSelected(item);
     }
 }

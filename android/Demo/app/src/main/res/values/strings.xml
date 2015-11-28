@@ -2,9 +2,13 @@
     <string name="app_name">QOTD</string>
     <string name="title_settings">Options</string>
     <string name="title_pt_form">Choose Personality Type</string>
+    <string name="pt_header">Your Personality Type:</string>
 
     <string name="submit">Submit</string>
     <string name="done">Done</string>
     <string name="choose_pt">Choose New</string>
+    <string name="push_enabled">Push Enabled</string>
+    <string name="email_enabled">Email Enabled</string>
+    <string name="email_hint">email@email.com</string>
 
 </resources>

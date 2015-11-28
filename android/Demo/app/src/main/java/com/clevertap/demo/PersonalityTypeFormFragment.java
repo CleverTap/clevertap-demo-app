@@ -7,6 +7,13 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.Button;
+import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
+import android.util.Log;
+import android.app.ProgressDialog;
+
+import java.util.List;
+import java.util.Arrays;
 
 
 /**
@@ -21,10 +28,21 @@ public class PersonalityTypeFormFragment extends Fragment {
     // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
     private static final String ARG_PT = "personalityType";
 
-    private String personalityType;
+    private String personalityType = null;
 
+    private final List<String> pTypes = Arrays.asList("earth", "fire", "metal", "water", "wood");
+
+    int earthValue = 0;
+    int fireValue = 0;
+    int metalValue = 0;
+    int waterValue = 0;
+    int woodValue = 0;
+
+    Boolean submitting = false;
 
     private OnFragmentInteractionListener mListener;
+
+    ProgressDialog workingIndicator;
 
     public PersonalityTypeFormFragment() {
         // Required empty public constructor
@@ -38,7 +56,7 @@ public class PersonalityTypeFormFragment extends Fragment {
      *
      * @return A new instance of fragment PersonalityTypeFormFragment.
      */
-    // TODO: Rename and change types and number of parameters
+
     public static PersonalityTypeFormFragment newInstance(String personalityType) {
         PersonalityTypeFormFragment fragment = new PersonalityTypeFormFragment();
         Bundle args = new Bundle();
@@ -62,10 +80,105 @@ public class PersonalityTypeFormFragment extends Fragment {
         LayoutInflater lf = getActivity().getLayoutInflater();
         View view = lf.inflate(R.layout.fragment_personality_type_form, container, false);
 
+        SeekBar earthSeekBar = (SeekBar) view.findViewById(R.id.earth_seekbar);
+        earthSeekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progressValue, boolean fromUser) {
+                earthValue = progressValue;
+
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                //no-op
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                // no-op
+            }
+        });
+
+        SeekBar fireSeekBar = (SeekBar) view.findViewById(R.id.fire_seekbar);
+        fireSeekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progressValue, boolean fromUser) {
+                fireValue = progressValue;
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                //no-op
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                // no-op
+            }
+        });
+
+        SeekBar metalSeekBar = (SeekBar) view.findViewById(R.id.metal_seekbar);
+        metalSeekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progressValue, boolean fromUser) {
+                metalValue = progressValue;
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                //no-op
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                // no-op
+            }
+        });
+
+        SeekBar waterSeekBar = (SeekBar) view.findViewById(R.id.water_seekbar);
+        waterSeekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progressValue, boolean fromUser) {
+                waterValue = progressValue;
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                //no-op
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                // no-op
+            }
+        });
+
+        SeekBar woodSeekBar = (SeekBar) view.findViewById(R.id.wood_seekbar);
+        woodSeekBar.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+
+            @Override
+            public void onProgressChanged(SeekBar seekBar, int progressValue, boolean fromUser) {
+                woodValue = progressValue;
+            }
+
+            @Override
+            public void onStartTrackingTouch(SeekBar seekBar) {
+                //no-op
+            }
+
+            @Override
+            public void onStopTrackingTouch(SeekBar seekBar) {
+                // no-op
+            }
+        });
+
         Button submitButton = (Button) view.findViewById(R.id.submit_button);
         submitButton.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
-                personalityType = "water";
                 onSubmitPressed();
             }
         });
@@ -77,8 +190,47 @@ public class PersonalityTypeFormFragment extends Fragment {
     }
 
     public void onSubmitPressed() {
+
+        if(submitting) {
+            return ;
+        }
+
+        submitting = true;
+
+        List<Integer> scores = Arrays.asList(earthValue, fireValue, metalValue, waterValue, woodValue);
+
+        int winningIdx = 0;
+        int highScore = 0;
+
+        for (int i = 0; i < 5; i++) {
+            int score = scores.get(i);
+            if(score > highScore) {
+                winningIdx = i;
+                highScore = score;
+            }
+
+        }
+
+        String newType = pTypes.get(winningIdx);
+        Log.d("PTYPE", newType);
+
+        // if its a new type then show working indicator
+        if(personalityType!= null && newType != null && personalityType.equals(newType)) {
+            // no-op
+        }  else {
+            personalityType = newType;
+            workingIndicator = new ProgressDialog(getContext());
+            workingIndicator.setTitle("Your type is "+personalityType);
+            workingIndicator.setMessage("Fetching Quote...");
+            workingIndicator.setCancelable(false);
+            workingIndicator.setIndeterminate(true);
+            workingIndicator.show();
+        }
+
         if (mListener != null && personalityType != null) {
             mListener.onFragmentInteractionPersonalityTypeForm(personalityType);
+        } else {
+            submitting = false;
         }
     }
 
@@ -97,6 +249,9 @@ public class PersonalityTypeFormFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
+        if(workingIndicator != null) {
+            workingIndicator.hide();
+        }
     }
 
     /**

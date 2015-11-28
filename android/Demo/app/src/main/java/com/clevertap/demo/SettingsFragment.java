@@ -1,14 +1,23 @@
 package com.clevertap.demo;
 
 import android.content.Context;
-import android.net.Uri;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.KeyEvent;
 import android.widget.Button;
+import android.view.inputmethod.EditorInfo;
 import android.widget.TextView;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.Switch;
+import android.widget.EditText;
+import android.widget.TextView.OnEditorActionListener;
+
+import java.util.NavigableSet;
 
 
 /**
@@ -21,8 +30,9 @@ import android.widget.TextView;
  */
 public class SettingsFragment extends Fragment {
 
-
     private OnFragmentInteractionListener mListener;
+
+    MainActivity parentActivity;
 
     public SettingsFragment() {
         // Required empty public constructor
@@ -46,22 +56,82 @@ public class SettingsFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        parentActivity = ((MainActivity)getActivity());
     }
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
+
 
         LayoutInflater lf = getActivity().getLayoutInflater();
         View view = lf.inflate(R.layout.fragment_settings, container, false);
 
-        Button submitButton = (Button) view.findViewById(R.id.submit_button);
-        submitButton.setOnClickListener(new View.OnClickListener() {
-            public void onClick(View v) {
-                onDonePressed(null);
+        Switch pushSwitch = (Switch) view.findViewById(R.id.push_switch);
+
+        Boolean pushEnabled = parentActivity.getPushEnabled();
+        pushSwitch.setChecked(pushEnabled);
+        pushSwitch.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView,
+                                         boolean isChecked) {
+               parentActivity.setPushEnabled(isChecked);
+
             }
         });
+
+        final Switch emailSwitch = (Switch) view.findViewById(R.id.email_switch);
+
+        Boolean emailEnabled = parentActivity.getEmailEnabled();
+        emailSwitch.setChecked(emailEnabled);
+        emailSwitch.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+
+            @Override
+            public void onCheckedChanged(CompoundButton buttonView,
+                                         boolean isChecked) {
+                parentActivity.setEmailEnabled(isChecked);
+            }
+        });
+
+
+        EditText editText = (EditText) view.findViewById(R.id.email_address);
+
+        String currentEmail = parentActivity.getEmailAddress();
+        if(currentEmail != null) {
+            editText.setText(currentEmail);
+        }
+
+        editText.setOnEditorActionListener(new OnEditorActionListener() {
+            @Override
+            public boolean onEditorAction(TextView v, int actionId, KeyEvent event) {
+                if (actionId == EditorInfo.IME_ACTION_DONE) {
+                    CharSequence email = v.getText();
+                    Boolean valid = isEmailValid(email);
+                    if(valid) {
+                        emailSwitch.setChecked(true);
+                        parentActivity.setEmailAddress(email.toString());
+                        return false;
+                    }
+                }
+                return true;
+            }
+        });
+
+        TextView ptTextView = (TextView) view.findViewById(R.id.personality_type);
+
+        String pType = parentActivity.getPersonalityType();
+
+        // set the text color based on the personality type
+        int colorId = parentActivity.getPersonalityTypeColorId();
+        if(Math.abs(colorId) > 0) {
+            ptTextView.setTextColor(colorId);
+        }
+
+        if(pType == null) {
+            pType = "Not Set";
+        }
+        ptTextView.setText(pType);
 
         Button showPTFormButton = (Button) view.findViewById(R.id.show_pt_form_button);
         showPTFormButton.setOnClickListener(new View.OnClickListener() {
@@ -78,12 +148,6 @@ public class SettingsFragment extends Fragment {
     public void onShowPTFormPressed() {
         if (mListener != null) {
             mListener.onFragmentInteractionSettings("showPTForm");
-        }
-    }
-
-    public void onDonePressed(String action) {
-        if (mListener != null) {
-            mListener.onFragmentInteractionSettings(action);
         }
     }
 
@@ -117,4 +181,10 @@ public class SettingsFragment extends Fragment {
     public interface OnFragmentInteractionListener {
         void onFragmentInteractionSettings(String action);
     }
+
+    private boolean isEmailValid(CharSequence email) {
+        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches();
+    }
 }
+
+

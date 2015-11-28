@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<!-- Generated with http://android-holo-colors.com -->
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+  <style name="EarthSeekBar" parent="@style/_EarthSeekBar"/>
+
+  <style name="_EarthSeekBar" parent="android:Theme.Holo.Light.DarkActionBar">
+
+    <item name="android:seekBarStyle">@style/SeekBarEarthSeekBar</item>
+
+  </style>
+
+</resources>

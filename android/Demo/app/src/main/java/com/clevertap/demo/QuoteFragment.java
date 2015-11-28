@@ -12,13 +12,15 @@ import android.widget.TextView;
 
 
 public class QuoteFragment extends Fragment {
-    // TODO: Rename parameter arguments, choose names that match
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_QUOTE = "quoteText";
 
-    // TODO: Rename and change types of parameters
+    private static final String ARG_QUOTE = "quoteText";
+    private static final String ARG_PT = "personalityType";
+
     private String quoteText;
+    private String pType;
     private TextView textView;
+
+    MainActivity parentActivity;
 
     public QuoteFragment() {
         // Required empty public constructor
@@ -28,13 +30,15 @@ public class QuoteFragment extends Fragment {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @param param1 Parameter 1.
+     * @param quote the quote text.
+     * @param personalityType the personality type.
      * @return A new instance of fragment QuoteFragment.
      */
-    public static QuoteFragment newInstance(String param1) {
+    public static QuoteFragment newInstance(String quote, String personalityType ) {
         QuoteFragment fragment = new QuoteFragment();
         Bundle args = new Bundle();
-        args.putString(ARG_QUOTE, param1);
+        args.putString(ARG_QUOTE, quote);
+        args.putString(ARG_PT, personalityType);
         fragment.setArguments(args);
         return fragment;
     }
@@ -45,8 +49,11 @@ public class QuoteFragment extends Fragment {
 
         if (getArguments() != null) {
             quoteText = getArguments().getString(ARG_QUOTE);
+            pType = getArguments().getString(ARG_PT);
 
         }
+
+        parentActivity = ((MainActivity)getActivity());
     }
 
     @Override
@@ -56,6 +63,13 @@ public class QuoteFragment extends Fragment {
         LayoutInflater lf = getActivity().getLayoutInflater();
         View view = lf.inflate(R.layout.fragment_quote, container, false);
         textView = (TextView) view.findViewById(R.id.quote_view);
+
+        // set the text color based on the personality type
+
+        int colorId = parentActivity.getPersonalityTypeColorId();
+        if(Math.abs(colorId) > 0) {
+            textView.setTextColor(colorId);
+        }
         textView.setText(quoteText);
 
         getActivity().setTitle(R.string.app_name);
