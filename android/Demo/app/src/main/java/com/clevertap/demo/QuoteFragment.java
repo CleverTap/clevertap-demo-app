@@ -17,8 +17,6 @@ public class QuoteFragment extends Fragment {
     private static final String ARG_PT = "personalityType";
 
     private String quoteText;
-    private String pType;
-    private TextView textView;
 
     MainActivity parentActivity;
 
@@ -31,14 +29,12 @@ public class QuoteFragment extends Fragment {
      * this fragment using the provided parameters.
      *
      * @param quote the quote text.
-     * @param personalityType the personality type.
      * @return A new instance of fragment QuoteFragment.
      */
-    public static QuoteFragment newInstance(String quote, String personalityType ) {
+    public static QuoteFragment newInstance(String quote ) {
         QuoteFragment fragment = new QuoteFragment();
         Bundle args = new Bundle();
         args.putString(ARG_QUOTE, quote);
-        args.putString(ARG_PT, personalityType);
         fragment.setArguments(args);
         return fragment;
     }
@@ -49,7 +45,6 @@ public class QuoteFragment extends Fragment {
 
         if (getArguments() != null) {
             quoteText = getArguments().getString(ARG_QUOTE);
-            pType = getArguments().getString(ARG_PT);
 
         }
 
@@ -62,7 +57,7 @@ public class QuoteFragment extends Fragment {
         // Inflate the layout for this fragment
         LayoutInflater lf = getActivity().getLayoutInflater();
         View view = lf.inflate(R.layout.fragment_quote, container, false);
-        textView = (TextView) view.findViewById(R.id.quote_view);
+        TextView textView = (TextView) view.findViewById(R.id.quote_view);
 
         // set the text color based on the personality type
 

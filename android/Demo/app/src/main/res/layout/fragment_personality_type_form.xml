@@ -2,7 +2,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
     tools:context="com.clevertap.demo.PersonalityTypeFormFragment">
 
     <LinearLayout
@@ -10,51 +9,216 @@
         android:layout_height="wrap_content"
         android:orientation = "vertical">
 
+        <TextView
+            android:id="@+id/earth_q"
+            android:textSize="20sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center"
+            android:text="@string/question_earth"/>
+
         <SeekBar
             android:id="@+id/earth_seekbar"
             style="@style/SeekBarEarthSeekBar"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="12dip"
-            android:paddingTop="12dip"
+            android:paddingBottom="2dip"
             android:max="10"/>
 
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="2dip">
+
+            <TextView
+                android:id="@+id/earth_q_left"
+                android:textSize="15sp"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:textStyle="bold"
+                android:text="@string/not_really"/>
+
+            <TextView
+                android:id="@+id/earth_q_right"
+                android:textSize="15sp"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:textStyle="bold"
+                android:text="@string/very"/>
+
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/fire_q"
+            android:textSize="20sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center"
+            android:paddingTop="12dip"
+            android:text="@string/question_fire"/>
 
         <SeekBar
             android:id="@+id/fire_seekbar"
             style="@style/SeekBarFireSeekBar"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="12dip"
-            android:paddingTop="12dip"
+            android:paddingBottom="2dip"
             android:max="10"/>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="12dip">
+
+            <TextView
+                android:id="@+id/fire_q_left"
+                android:textSize="15sp"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:textStyle="bold"
+                android:text="@string/rarely"/>
+
+            <TextView
+                android:id="@+id/fire_q_right"
+                android:textSize="15sp"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:textStyle="bold"
+                android:text="@string/often"/>
+
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/metal_q"
+            android:textSize="20sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center"
+            android:text="@string/question_metal"/>
 
         <SeekBar
             android:id="@+id/metal_seekbar"
             style="@style/SeekBarMetalSeekBar"
-            android:layout_width="fill_parent"
+            android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="12dip"
-            android:paddingTop="12dip"
+            android:paddingBottom="2dip"
             android:max="10"/>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="12dip">
+
+            <TextView
+                android:id="@+id/metal_q_left"
+                android:textSize="15sp"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:textStyle="bold"
+                android:text="@string/not_so_much"/>
+
+            <TextView
+                android:id="@+id/metal_q_right"
+                android:textSize="14sp"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:textStyle="bold"
+                android:text="@string/heck_yes"/>
+
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/water_q"
+            android:textSize="20sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center"
+            android:text="@string/question_water"/>
 
         <SeekBar
             android:id="@+id/water_seekbar"
             style="@style/SeekBarWaterSeekBar"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="12dip"
-            android:paddingTop="12dip"
+            android:paddingBottom="2dip"
             android:max="10"/>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="12dip">
+
+            <TextView
+                android:id="@+id/water_q_left"
+                android:textSize="15sp"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:textStyle="bold"
+                android:text="@string/unimportant"/>
+
+            <TextView
+                android:id="@+id/water_q_right"
+                android:textSize="15sp"
+                android:layout_width="70dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:textStyle="bold"
+                android:text="@string/important"/>
+
+        </RelativeLayout>
+
+        <TextView
+            android:id="@+id/wood_q"
+            android:textSize="20sp"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAlignment="center"
+            android:text="@string/question_wood"/>
 
         <SeekBar
             android:id="@+id/wood_seekbar"
             style="@style/SeekBarWoodSeekBar"
             android:layout_width="fill_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="12dip"
-            android:paddingTop="12dip"
+            android:paddingBottom="2dip"
             android:max="10"/>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:paddingBottom="0dip">
+
+            <TextView
+                android:id="@+id/wood_q_left"
+                android:textSize="15sp"
+                android:layout_width="100dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentLeft="true"
+                android:textStyle="bold"
+                android:text="@string/no"/>
+
+            <TextView
+                android:id="@+id/wood_q_right"
+                android:textSize="15sp"
+                android:layout_width="60dp"
+                android:layout_height="wrap_content"
+                android:layout_alignParentRight="true"
+                android:textStyle="bold"
+                android:text="@string/yes"/>
+
+        </RelativeLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
@@ -66,11 +230,11 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="@string/submit"
-                android:minHeight="50dp"
-                android:textSize="22sp">
+                android:textSize="20sp">
             </Button>
 
         </LinearLayout>
 
     </LinearLayout>
+
 </FrameLayout>

@@ -10,7 +10,8 @@ import android.widget.Button;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.util.Log;
-import android.app.ProgressDialog;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
 
 import java.util.List;
 import java.util.Arrays;
@@ -25,10 +26,6 @@ import java.util.Arrays;
  * create an instance of this fragment.
  */
 public class PersonalityTypeFormFragment extends Fragment {
-    // the fragment initialization parameters, e.g. ARG_ITEM_NUMBER
-    private static final String ARG_PT = "personalityType";
-
-    private String personalityType = null;
 
     private final List<String> pTypes = Arrays.asList("earth", "fire", "metal", "water", "wood");
 
@@ -42,7 +39,7 @@ public class PersonalityTypeFormFragment extends Fragment {
 
     private OnFragmentInteractionListener mListener;
 
-    ProgressDialog workingIndicator;
+    MainActivity parentActivity;
 
     public PersonalityTypeFormFragment() {
         // Required empty public constructor
@@ -52,15 +49,12 @@ public class PersonalityTypeFormFragment extends Fragment {
      * Use this factory method to create a new instance of
      * this fragment using the provided parameters.
      *
-     * @param personalityType Parameter 1.
-     *
      * @return A new instance of fragment PersonalityTypeFormFragment.
      */
 
-    public static PersonalityTypeFormFragment newInstance(String personalityType) {
+    public static PersonalityTypeFormFragment newInstance() {
         PersonalityTypeFormFragment fragment = new PersonalityTypeFormFragment();
         Bundle args = new Bundle();
-        args.putString(ARG_PT, personalityType);
         fragment.setArguments(args);
         return fragment;
     }
@@ -68,9 +62,7 @@ public class PersonalityTypeFormFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            personalityType = getArguments().getString(ARG_PT);
-        }
+        parentActivity = ((MainActivity)getActivity());
     }
 
     @Override
@@ -186,6 +178,10 @@ public class PersonalityTypeFormFragment extends Fragment {
 
         getActivity().setTitle(R.string.title_pt_form);
 
+        if(!parentActivity.getHasSeenInstructions()) {
+            showInstructionsDialog();
+        }
+
         return view;
     }
 
@@ -210,25 +206,10 @@ public class PersonalityTypeFormFragment extends Fragment {
             }
 
         }
-
         String newType = pTypes.get(winningIdx);
-        Log.d("PTYPE", newType);
 
-        // if its a new type then show working indicator
-        if(personalityType!= null && newType != null && personalityType.equals(newType)) {
-            // no-op
-        }  else {
-            personalityType = newType;
-            workingIndicator = new ProgressDialog(getContext());
-            workingIndicator.setTitle("Your type is "+personalityType);
-            workingIndicator.setMessage("Fetching Quote...");
-            workingIndicator.setCancelable(false);
-            workingIndicator.setIndeterminate(true);
-            workingIndicator.show();
-        }
-
-        if (mListener != null && personalityType != null) {
-            mListener.onFragmentInteractionPersonalityTypeForm(personalityType);
+        if (mListener != null && newType != null) {
+            mListener.onFragmentInteractionPersonalityTypeForm(newType);
         } else {
             submitting = false;
         }
@@ -249,9 +230,6 @@ public class PersonalityTypeFormFragment extends Fragment {
     public void onDetach() {
         super.onDetach();
         mListener = null;
-        if(workingIndicator != null) {
-            workingIndicator.hide();
-        }
     }
 
     /**
@@ -266,5 +244,30 @@ public class PersonalityTypeFormFragment extends Fragment {
      */
     public interface OnFragmentInteractionListener {
         void onFragmentInteractionPersonalityTypeForm(String personalityType);
+    }
+
+    private void showInstructionsDialog() {
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(
+                getContext());
+
+        // set title
+        alertDialogBuilder.setTitle(R.string.welcome);
+
+        // set dialog message
+        alertDialogBuilder
+                .setMessage(R.string.instructions)
+                .setCancelable(false)
+                .setPositiveButton(R.string.close_instructions,new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog,int id) {
+                        parentActivity.setHasSeenInstructions(true);
+                        dialog.cancel();
+                    }
+                });
+
+        // create alert dialog
+        AlertDialog alertDialog = alertDialogBuilder.create();
+
+        // show it
+        alertDialog.show();
     }
 }

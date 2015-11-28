@@ -14,13 +14,13 @@ import android.view.MenuInflater;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.support.v4.app.FragmentManager;
+import android.app.ProgressDialog;
 
 import com.clevertap.android.sdk.CleverTapAPI;
 import com.clevertap.android.sdk.SyncListener;
 import com.clevertap.android.sdk.exceptions.CleverTapMetaDataNotFoundException;
 import com.clevertap.android.sdk.exceptions.CleverTapPermissionsNotSatisfied;
 
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -54,6 +54,8 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     private static final String SETTINGS_FRAG_TAG = "settingsFragTag";
 
     private Menu cachedMenu;
+
+    ProgressDialog workingIndicator;
 
     // lifecycle
 
@@ -263,6 +265,17 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         clevertap.profile.push(profileUpdate);
     }
 
+    public Boolean getHasSeenInstructions() {
+        String hasSeen = clevertap.profile.getProperty("hasSeenInstructions");
+        return Boolean.valueOf(hasSeen);
+    }
+
+    public void setHasSeenInstructions(Boolean hasSeen) {
+        HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
+        profileUpdate.put("hasSeenInstructions", hasSeen);
+        clevertap.profile.push(profileUpdate);
+    }
+
     // webservice is via AWS lambda function
 
     private void initWebService() {
@@ -288,6 +301,14 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     private void fetchQuote(final String quoteId, String personalityType, final Boolean forceReset) {
         // The Lambda function invocation results in a network call.
         // Make sure it is not called from the main thread.
+
+        workingIndicator = new ProgressDialog(MainActivity.this);
+        workingIndicator.setTitle("Your type is "+personalityType);
+        workingIndicator.setMessage("Fetching Quote...");
+        workingIndicator.setCancelable(false);
+        workingIndicator.setIndeterminate(true);
+        workingIndicator.show();
+
         Map event = new HashMap();
 
         if(quoteId == null && personalityType == null) {
@@ -309,6 +330,9 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
                     return lambda.fetchQuote(params[0]);
                 } catch (Exception e) {
                     Log.e("Lambda TAG", e.getLocalizedMessage());
+                    if(workingIndicator != null) {
+                        workingIndicator.hide();
+                    }
                     return null;
 
                 }
@@ -383,7 +407,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     private void showPersonalityTypeFormFragment() {
 
         showSettingsButton(false);
-        PersonalityTypeFormFragment ptFragment = PersonalityTypeFormFragment.newInstance(currentPersonalityType);
+        PersonalityTypeFormFragment ptFragment = PersonalityTypeFormFragment.newInstance();
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragment_container, ptFragment);
         transaction.addToBackStack(PT_FORM_FRAG_TAG);
@@ -404,9 +428,13 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
     private void showQuoteFragment(String quote) {
 
+        if(workingIndicator != null) {
+            workingIndicator.hide();
+        }
+
         getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
         showSettingsButton(true);
-        QuoteFragment quoteFragment = QuoteFragment.newInstance(quote, currentPersonalityType);
+        QuoteFragment quoteFragment = QuoteFragment.newInstance(quote);
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragment_container, quoteFragment);
         transaction.commit();

@@ -1,14 +1,44 @@
 <resources>
     <string name="app_name">QOTD</string>
     <string name="title_settings">Options</string>
-    <string name="title_pt_form">Choose Personality Type</string>
+    <string name="title_pt_form">Find Personality Type</string>
+    <string name="welcome">Welcome to QOTD</string>
     <string name="pt_header">Your Personality Type:</string>
+    <string name="instructions">Find your personality type and get a personalized
+        inspirational quote to start your day by push notfication and/or email.</string>
+    <string name="close_instructions">"Got It"</string>
 
     <string name="submit">Submit</string>
     <string name="done">Done</string>
-    <string name="choose_pt">Choose New</string>
+    <string name="choose_pt">Redo</string>
     <string name="push_enabled">Push Enabled</string>
     <string name="email_enabled">Email Enabled</string>
     <string name="email_hint">email@email.com</string>
+
+    <string name="question_earth">The opinions of others are important</string>
+    <string name="question_fire">You are easily excited</string>
+    <string name="question_metal">You enjoy solving math problems</string>
+    <string name="question_water">A penny saved is a penny earned</string>
+    <string name="question_wood">You like to make plans</string>
+
+    <string name="not_really">Not Really</string>
+    <string name="very">Very</string>
+
+    <string name="rarely">Rarely</string>
+    <string name="often">Often</string>
+
+    <string name="not_so_much">Not So Much</string>
+    <string name="heck_yes">Heck Yes</string>
+
+    <string name="agree">Agree</string>
+    <string name="disagee">Disagree</string>
+
+    <string name="unimportant">Unimportant</string>
+    <string name="important">Important</string>
+
+    <string name="no">No</string>
+    <string name="yes">Yes</string>
+
+
 
 </resources>
