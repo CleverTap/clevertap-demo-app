@@ -175,11 +175,11 @@ public class PersonalityTypeFormFragment extends Fragment {
             }
         });
 
-
         getActivity().setTitle(R.string.title_pt_form);
 
         if(!parentActivity.getHasSeenInstructions()) {
             showInstructionsDialog();
+            parentActivity.setHasSeenInstructions(true);
         }
 
         return view;
@@ -259,7 +259,6 @@ public class PersonalityTypeFormFragment extends Fragment {
                 .setCancelable(false)
                 .setPositiveButton(R.string.close_instructions,new DialogInterface.OnClickListener() {
                     public void onClick(DialogInterface dialog,int id) {
-                        parentActivity.setHasSeenInstructions(true);
                         dialog.cancel();
                     }
                 });

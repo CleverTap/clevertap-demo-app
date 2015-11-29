@@ -75,9 +75,15 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
         String personalityType = clevertap.profile.getProperty("personalityType");
         Log.d("PR_GET_TYPE", personalityType != null ? personalityType : "is null");
+
         if (personalityType != null) {
             currentPersonalityType = personalityType;
             displayLatestQuote(false);
+        } else {
+            // no personality type set and we have seen the form; reshow the form
+            if(getHasSeenInstructions()) {
+                showPersonalityTypeFormFragment();
+            }
         }
 
         if (savedInstanceState == null) {
@@ -111,7 +117,15 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         Log.d("PR_GET_TYPE", personalityType != null ? personalityType : "personality type is null");
 
         if (personalityType == null) {
-            showPersonalityTypeFormFragment();
+            runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    if (!runningQuoteFromIntent) {
+                        showPersonalityTypeFormFragment();
+                    }
+                }
+            });
+
         } else {
             runOnUiThread(new Runnable() {
                 @Override
@@ -267,6 +281,9 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
     public Boolean getHasSeenInstructions() {
         String hasSeen = clevertap.profile.getProperty("hasSeenInstructions");
+        if(hasSeen == null) {
+            hasSeen = "false";
+        }
         return Boolean.valueOf(hasSeen);
     }
 
@@ -410,7 +427,11 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         PersonalityTypeFormFragment ptFragment = PersonalityTypeFormFragment.newInstance();
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragment_container, ptFragment);
-        transaction.addToBackStack(PT_FORM_FRAG_TAG);
+
+        if(currentPersonalityType != null) {
+            transaction.addToBackStack(PT_FORM_FRAG_TAG);
+        }
+
         transaction.commit();
     }
 

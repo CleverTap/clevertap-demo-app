@@ -209,7 +209,7 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentLeft="true"
                     android:textStyle="bold"
-                    android:text="@string/no"/>
+                    android:text="@string/disagree"/>
 
                 <TextView
                     android:id="@+id/wood_q_right"
@@ -218,7 +218,7 @@
                     android:layout_height="wrap_content"
                     android:layout_alignParentRight="true"
                     android:textStyle="bold"
-                    android:text="@string/yes"/>
+                    android:text="@string/agree"/>
 
             </RelativeLayout>
 

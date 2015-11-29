@@ -5,7 +5,7 @@
     <string name="welcome">Welcome to QOTD</string>
     <string name="pt_header">Your Personality Type:</string>
     <string name="instructions">Find your personality type and get a personalized
-        inspirational quote to start your day by push notfication and/or email.</string>
+        inspirational quote every morning to start your day by push notfication and/or email.</string>
     <string name="close_instructions">"Got It"</string>
 
     <string name="submit">Submit</string>
@@ -19,7 +19,7 @@
     <string name="question_fire">You are easily excited</string>
     <string name="question_metal">You enjoy solving math problems</string>
     <string name="question_water">A penny saved is a penny earned</string>
-    <string name="question_wood">You like to make plans</string>
+    <string name="question_wood">A long term plan is the key to life</string>
 
     <string name="not_really">Not Really</string>
     <string name="very">Very</string>
@@ -31,7 +31,7 @@
     <string name="heck_yes">Heck Yes</string>
 
     <string name="agree">Agree</string>
-    <string name="disagee">Disagree</string>
+    <string name="disagree">Disagree</string>
 
     <string name="unimportant">Unimportant</string>
     <string name="important">Important</string>
