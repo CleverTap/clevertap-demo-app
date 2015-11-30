@@ -319,12 +319,16 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         // The Lambda function invocation results in a network call.
         // Make sure it is not called from the main thread.
 
-        workingIndicator = new ProgressDialog(MainActivity.this);
-        workingIndicator.setTitle("Your type is "+personalityType);
-        workingIndicator.setMessage("Fetching Quote...");
-        workingIndicator.setCancelable(false);
-        workingIndicator.setIndeterminate(true);
+        if(workingIndicator == null) {
+            workingIndicator = new ProgressDialog(MainActivity.this);
+            workingIndicator.setMessage("Fetching Quote...");
+            workingIndicator.setCancelable(false);
+            workingIndicator.setIndeterminate(true);
+        }
+
+        workingIndicator.setTitle("Your type is " + personalityType);
         workingIndicator.show();
+
 
         Map event = new HashMap();
 

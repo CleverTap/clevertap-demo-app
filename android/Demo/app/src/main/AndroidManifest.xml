@@ -72,7 +72,7 @@
             android:name="CLEVERTAP_TOKEN"
             android:value="146-b16" />
 
-        <!-- Push Notifications, replace 12345678910 with your GCM sender id -->
+        <!-- Push Notifications, replace 12345678910 with your GCM sender project number -->
         <meta-data
             android:name="GCM_SENDER_ID"
             android:value="id:43490895053" />
