@@ -33,6 +33,7 @@ except Exception, e:
     logger.error(e)
     dynamo = None
 
+
 LENGTH_BY_PREFIX = [
   (0xC0, 2), # first byte mask, total codepoint length
   (0xE0, 3), 
@@ -41,6 +42,7 @@ LENGTH_BY_PREFIX = [
   (0xFC, 6),
 ]
 
+
 def codepoint_length(first_byte):
     if first_byte < 128:
         return 1 # ASCII
@@ -48,6 +50,7 @@ def codepoint_length(first_byte):
         if first_byte & mask == mask:
             return length
     assert False, 'Invalid byte %r' % first_byte
+
 
 def cut_to_bytes_length(unicode_text, byte_limit):
     utf8_bytes = unicode_text.encode('UTF-8')
@@ -85,9 +88,6 @@ def handler (event, context):
     if event and event.get("tz_string", None):
         tz_string = event.get("tz_string")
      
-    print tz_string 
-
-
     query = {'event_name': 'App Launched',
             'from': from_date,
             'to': to_date,
@@ -106,96 +106,101 @@ def handler (event, context):
 
     quotes_cache = {}
 
+    # individual profiles that are merged via the same identity value are contained in the same array
     for profile_array in res:
 
         if len(profile_array) <= 0:
             continue
 
-        profile = profile_array[0]
-        custom_vars = profile.get("pv", {})
-        object_id = profile.get("cookie", None)
+        for profile in profile_array:
 
-        if not object_id:
-            continue
+            custom_vars = profile.get("pv", {})
+            object_id = profile.get("cookie", None)
 
-        personality_type = custom_vars.get("personalityType", None)
-        
-        if not personality_type:
-            continue
-        
-        # set our messaging availability flags
-        # push defaults to True
-        can_push = custom_vars.get("canPush", True)
+            if not object_id:
+                continue
 
-        # if email + explicity canEmail set to True then trigger email for this user
-        email_address = profile.get("em", None) 
+            personality_type = custom_vars.get("personalityType", None)
+            
+            if not personality_type:
+                continue
+            
+            # get the quote - cache based on personality type
+            item = quotes_cache.get(personality_type, None)
 
-        can_email = email_address is not None
-        if can_email:
-            # email defaults to False
-            can_email = custom_vars.get("canEmail", False)
-        
-        item = quotes_cache.get(personality_type, None)
+            if item:
+                quote = item['quote']
+                quote_id = item['quote_id']
 
-        if item:
-            quote = item['quote']
-            quote_id = item['quote_id']
+            # not in the cache - fetch from the db
+            else:
+                try:
+                    query_response = dynamo.query(TableName=TABLE_NAME, IndexName=INDEX_NAME, KeyConditionExpression=Key('p_type').eq(personality_type))
+                    items = query_response.get("Items", [])
+                    item = random.choice(items)
+                    quote = item.get("quote")
+                    quote_id = item.get("quote_id")
 
-        else:
-            try:
-                query_response = dynamo.query(TableName=TABLE_NAME, IndexName=INDEX_NAME, KeyConditionExpression=Key('p_type').eq(personality_type))
-                items = query_response.get("Items", [])
-                item = random.choice(items)
-                quote = item.get("quote")
-                quote_id = item.get("quote_id")
+                except Exception, e:
+                    logger.error(e)
+                    quote = None 
+                    quote_id = None 
 
-            except Exception, e:
-                logger.error(e)
-                quote = None 
-                quote_id = None 
+                if quote and quote_id:
+                    # truncate quote if need be
+                    byte_length = len(quote.encode('utf-8'))
+                    if byte_length > QUOTE_BYTE_LENGTH:
+                        quote = cut_to_bytes_length(quote, QUOTE_BYTE_LENGTH-3)
+                        quote = quote +"..."
+                        item['quote'] = quote
 
-            if quote and quote_id:
-                # truncate quote if need be
-                byte_length = len(quote.encode('utf-8'))
-                if byte_length > QUOTE_BYTE_LENGTH:
-                    quote = cut_to_bytes_length(quote, QUOTE_BYTE_LENGTH-3)
-                    quote = quote +"..."
-                    item['quote'] = quote
+                    quotes_cache[personality_type] = item 
 
-                quotes_cache[personality_type] = item 
+            if not quote or not quote_id:
+                continue
+            
+            # update profile and push actions into CT to trigger messaging
+            data = []
+            ts = int(time.time())
 
-        if not quote or not quote_id:
-            continue
-        
-        # update profile and push actions into CT to trigger messaging
-        data = []
-        ts = int(time.time())
-
-        data.append({'type': 'profile',
-                    'WZRK_G': object_id,
-                    'ts': ts,
-                    'profileData': {'quoteId': quote_id}
-                    }) 
-
-        if can_push:
-            data.append({'type': 'event',
+            # set the new quote id on the user profile
+            data.append({'type': 'profile',
                         'WZRK_G': object_id,
                         'ts': ts,
-                        'evtName': 'newQuote',
+                        'profileData': {'quoteId': quote_id}
+                        }) 
+
+            # if messaging enabled, push trigger events to CT
+            # set our messaging availability flags
+            # push defaults to True
+            can_push = custom_vars.get("canPush", True)
+
+            # if email + explicity canEmail set to True then trigger email for this user
+            email_address = profile.get("em", None) 
+            can_email = email_address is not None
+            if can_email:
+                # email defaults to False
+                can_email = custom_vars.get("canEmail", False)
+            
+            if can_push:
+                data.append({'type': 'event',
+                            'WZRK_G': object_id,
+                            'ts': ts,
+                            'evtName': 'newQuote',
+                            'evtData': {"value":quote, "quoteId":quote_id}
+                            })
+        
+            if can_email:
+                data.append({'type': 'event',
+                        'WZRK_G': object_id,
+                        'ts': ts,
+                        'evtName': 'newQuoteEmail',
                         'evtData': {"value":quote, "quoteId":quote_id}
                         })
-    
-        if can_email:
-            data.append({'type': 'event',
-                    'WZRK_G': object_id,
-                    'ts': ts,
-                    'evtName': 'newQuoteEmail',
-                    'evtData': {"value":quote, "quoteId":quote_id}
-                    })
 
-        if len(data) > 0:
-            clevertap.up(data)
-    
+            if len(data) > 0:
+                clevertap.up(data)
+        
     return True    
 
 if __name__ == '__main__':
