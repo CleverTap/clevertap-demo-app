@@ -170,8 +170,11 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
         profileUpdate.put("personalityType", personalityType);
         profileUpdate.put("timeZone", "UTC" + hours);
-
         clevertap.profile.push(profileUpdate);
+
+        HashMap<String, Object> event = new HashMap<String, Object>();
+        event.put("value", personalityType);
+        clevertap.event.push("chosePersonalityType", event);
     }
 
     // sets the do not disturb status:  pass false to prevent communications
