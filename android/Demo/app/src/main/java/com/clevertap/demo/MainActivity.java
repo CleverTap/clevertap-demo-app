@@ -1,6 +1,5 @@
 package com.clevertap.demo;
 
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.FragmentTransaction;
@@ -48,6 +47,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     private String currentQuote;
     private String currentAuthor;
     Boolean runningQuoteFromIntent = false;
+    Boolean showQuoteOnResume = false;
 
     private static final String QUOTE_FRAG_TAG = "quoteFragTag";
     private static final String PT_FORM_FRAG_TAG = "ptFormFragTag";
@@ -102,6 +102,15 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     }
 
     @Override
+    protected void onResume() {
+
+        super.onResume();
+        if(showQuoteOnResume) {
+            showQuoteFragment(currentQuote);
+        }
+    }
+
+    @Override
     protected void onStop() {
         super.onStop();
         runningQuoteFromIntent = false;
@@ -109,8 +118,36 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
     // CleverTap
 
+    private void initCleverTap() {
+
+        try {
+            // initialize CleverTap
+            CleverTapAPI.setDebugLevel(1277182231);
+            //CleverTapAPI.setDebugLevel(1);
+            clevertap = CleverTapAPI.getInstance(getApplicationContext());
+            clevertap.enablePersonalization();
+            clevertap.setSyncListener(this);
+
+        } catch (CleverTapMetaDataNotFoundException | CleverTapPermissionsNotSatisfied e) {
+            // handle appropriately
+            e.printStackTrace();
+        }
+    }
+
     // SyncListener
     public void profileDataUpdated(JSONObject updates) {
+
+        Log.d("PR_UPDATES", updates.toString());
+        JSONObject profileUpdates = (JSONObject) updates.opt("profile");
+
+        if(profileUpdates == null) {
+            return ;
+        }
+        Boolean needUpdate = (profileUpdates.opt("quoteId") != null || profileUpdates.opt("personalityType") != null);
+
+        if(!needUpdate) {
+            return ;
+        }
 
         String personalityType = clevertap.profile.getProperty("personalityType");
         currentPersonalityType = personalityType;
@@ -139,21 +176,6 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         }
     }
 
-    private void initCleverTap() {
-
-        try {
-            // initialize CleverTap
-            CleverTapAPI.setDebugLevel(1277182231);
-            //CleverTapAPI.setDebugLevel(1);
-            clevertap = CleverTapAPI.getInstance(getApplicationContext());
-            clevertap.setSyncListener(this);
-
-        } catch (CleverTapMetaDataNotFoundException | CleverTapPermissionsNotSatisfied e) {
-            // handle appropriately
-            e.printStackTrace();
-        }
-    }
-
     public void setProfile(String personalityType) {
 
         if (clevertap == null || personalityType == null) {
@@ -179,7 +201,9 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
     // sets the do not disturb status:  pass false to prevent communications
     public void setPushEnabled(Boolean on) {
-
+        if (clevertap == null) {
+            return;
+        }
         HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
         profileUpdate.put("canPush", on);
         clevertap.profile.push(profileUpdate);
@@ -187,13 +211,18 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
     // sets the do not disturb status:  pass false to prevent communications
     public void setEmailEnabled(Boolean on) {
-
+        if (clevertap == null) {
+            return;
+        }
         HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
         profileUpdate.put("canEmail", on);
         clevertap.profile.push(profileUpdate);
     }
 
     public Boolean getPushEnabled() {
+        if (clevertap == null) {
+            return false;
+        }
 
         String canPush = clevertap.profile.getProperty("canPush");
         if(canPush == null) {
@@ -205,6 +234,10 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     }
 
     public Boolean getEmailEnabled() {
+        if (clevertap == null) {
+            return false;
+        }
+
         String canEmail = clevertap.profile.getProperty("canEmail");
         if(canEmail == null) {
             // email defaults to disabled
@@ -215,10 +248,18 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     }
 
     public String getEmailAddress() {
+        if (clevertap == null) {
+            return null;
+        }
+
         return clevertap.profile.getProperty("Email");
     }
 
     public String getPersonalityType() {
+        if (clevertap == null) {
+            return null;
+        }
+
         return clevertap.profile.getProperty("personalityType");
 
     }
@@ -255,7 +296,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
     public void setEmailAddress(String email) {
 
-        if(email == null) {
+        if(clevertap == null || email == null) {
             return ;
         }
 
@@ -283,6 +324,11 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     }
 
     public Boolean getHasSeenInstructions() {
+
+        if (clevertap == null) {
+            return false;
+        }
+
         String hasSeen = clevertap.profile.getProperty("hasSeenInstructions");
         if(hasSeen == null) {
             hasSeen = "false";
@@ -291,6 +337,10 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     }
 
     public void setHasSeenInstructions(Boolean hasSeen) {
+        if (clevertap == null) {
+            return;
+        }
+
         HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
         profileUpdate.put("hasSeenInstructions", hasSeen);
         clevertap.profile.push(profileUpdate);
@@ -422,7 +472,9 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         currentAuthor = author != null ? author : "Unknown";
 
         quote += "\n\n" + currentAuthor;
+
         showQuoteFragment(quote);
+
         checkSetProfileQuoteId(quoteId, forceReset);
     }
 
@@ -439,7 +491,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             transaction.addToBackStack(PT_FORM_FRAG_TAG);
         }
 
-        transaction.commit();
+        transaction.commitAllowingStateLoss();
     }
 
     public void onFragmentInteractionPersonalityTypeForm(String personalityType) {
@@ -460,12 +512,21 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             workingIndicator.hide();
         }
 
-        getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        try {
+            getSupportFragmentManager().popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
+        }
+        catch(IllegalStateException e) {
+            showQuoteOnResume = true;
+            return ;
+        }
+
+        showQuoteOnResume = false;
+
         showSettingsButton(true);
         QuoteFragment quoteFragment = QuoteFragment.newInstance(quote);
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragment_container, quoteFragment);
-        transaction.commit();
+        transaction.commitAllowingStateLoss();
     }
 
     private void showSettingsFragment() {
@@ -475,7 +536,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
         transaction.replace(R.id.fragment_container, settingsFragment);
         transaction.addToBackStack(SETTINGS_FRAG_TAG);
-        transaction.commit();
+        transaction.commitAllowingStateLoss();
     }
 
     public void onFragmentInteractionSettings(String action) {
@@ -568,6 +629,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             // no-op
         }
     }
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 

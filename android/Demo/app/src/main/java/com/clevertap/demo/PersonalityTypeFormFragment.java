@@ -185,6 +185,10 @@ public class PersonalityTypeFormFragment extends Fragment {
         return view;
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+    };
+
     public void onSubmitPressed() {
 
         if(submitting) {

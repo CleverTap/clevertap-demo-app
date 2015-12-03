@@ -82,4 +82,8 @@ public class QuoteFragment extends Fragment {
         super.onDetach();
     }
 
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+    };
+
 }
