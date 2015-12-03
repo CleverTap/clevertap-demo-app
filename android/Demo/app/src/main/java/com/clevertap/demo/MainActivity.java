@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     private String currentAuthor;
     Boolean runningQuoteFromIntent = false;
     Boolean showQuoteOnResume = false;
+    Boolean initialSyncComplete = false;
 
     private static final String QUOTE_FRAG_TAG = "quoteFragTag";
     private static final String PT_FORM_FRAG_TAG = "ptFormFragTag";
@@ -122,7 +123,8 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
         try {
             // initialize CleverTap
-            CleverTapAPI.setDebugLevel(1);
+            CleverTapAPI.setDebugLevel(1277182231);
+            //CleverTapAPI.setDebugLevel(1);
             clevertap = CleverTapAPI.getInstance(getApplicationContext());
             clevertap.enablePersonalization();
             clevertap.setSyncListener(this);
@@ -142,11 +144,13 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         if(profileUpdates == null) {
             return ;
         }
-        Boolean needUpdate = (profileUpdates.opt("quoteId") != null || profileUpdates.opt("personalityType") != null);
+        Boolean needUpdate = !initialSyncComplete || (profileUpdates.opt("quoteId") != null || profileUpdates.opt("personalityType") != null);
 
         if(!needUpdate) {
             return ;
         }
+
+        initialSyncComplete = true;
 
         String personalityType = clevertap.profile.getProperty("personalityType");
         currentPersonalityType = personalityType;
