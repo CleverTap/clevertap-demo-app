@@ -2,9 +2,9 @@ QOTD - Get a daily inspirational quote (optionally sent via push notification an
 
 A simple demo of a "personalized" app using "serverless" backend components.
 
- [AWS DynamoDB](https://aws.amazon.com/dynamodb/) - Quote database  
+ [Amazon DynamoDB](https://aws.amazon.com/dynamodb/) - Quote database  
  [AWS Lambda](https://aws.amazon.com/lambda/) - Python Quote API and Cron Task  
- [AWS API Gateway](https://aws.amazon.com/api-gateway/)  
+ [Amazon API Gateway](https://aws.amazon.com/api-gateway/)  
  [CleverTap](https://clevertap.com/) - user profile management, analytics and messaging  
 
 
