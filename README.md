@@ -7,4 +7,5 @@ A simple demo of a "personalized" app using "serverless" backend components.
  [Amazon API Gateway](https://aws.amazon.com/api-gateway/)  
  [CleverTap](https://clevertap.com/) - user profile management, analytics and messaging  
 
+![structure](https://raw.github.com/CleverTap/clevertap-demo-app/master/QOTD_structure.jpg)
 
