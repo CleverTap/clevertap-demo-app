@@ -1,6 +1,0 @@
-GCC_PREPROCESSOR_DEFINITIONS = $(inherited) COCOAPODS=1
-HEADER_SEARCH_PATHS = "${PODS_ROOT}/Headers/Public" "${PODS_ROOT}/Headers/Public/AWSCognito" "${PODS_ROOT}/Headers/Public/AWSCore" "${PODS_ROOT}/Headers/Public/AWSLambda"
-OTHER_CFLAGS = $(inherited) -isystem "${PODS_ROOT}/Headers/Public" -isystem "${PODS_ROOT}/Headers/Public/AWSCognito" -isystem "${PODS_ROOT}/Headers/Public/AWSCore" -isystem "${PODS_ROOT}/Headers/Public/AWSLambda"
-OTHER_LDFLAGS = -ObjC -l"Pods-AWSCognito" -l"Pods-AWSCore" -l"Pods-AWSLambda" -l"sqlite3" -l"z" -framework "Foundation" -framework "SystemConfiguration" -framework "UIKit"
-OTHER_LIBTOOLFLAGS = $(OTHER_LDFLAGS)
-PODS_ROOT = ${SRCROOT}/Pods
