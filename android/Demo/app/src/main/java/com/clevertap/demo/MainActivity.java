@@ -180,7 +180,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         }
     }
 
-    public void setProfile(String personalityType) {
+    public void setInitialProfile(String personalityType) {
 
         if (clevertap == null || personalityType == null) {
             return;
@@ -514,7 +514,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         Boolean forceReset = false;
         if (!personalityType.equals(currentPersonalityType)) {
             currentPersonalityType = personalityType;
-            setProfile(personalityType);
+            setInitialProfile(personalityType);
             forceReset = true;
         }
 
