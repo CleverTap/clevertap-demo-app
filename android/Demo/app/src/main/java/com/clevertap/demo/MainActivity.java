@@ -37,7 +37,8 @@ import org.json.JSONObject;
 
 public class MainActivity extends AppCompatActivity implements SyncListener,
         PersonalityTypeFormFragment.OnFragmentInteractionListener,
-        SettingsFragment.OnFragmentInteractionListener, FragmentManager.OnBackStackChangedListener {
+        SettingsFragment.OnFragmentInteractionListener,
+        FragmentManager.OnBackStackChangedListener {
 
     private CleverTapAPI clevertap;
     private ILambdaInvoker lambda;
@@ -79,6 +80,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
         if (personalityType != null) {
             currentPersonalityType = personalityType;
+            setTimeZone();
             displayLatestQuote(false);
         } else {
             // no personality type set and we have seen the form; reshow the form
@@ -124,7 +126,6 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         try {
             // initialize CleverTap
             CleverTapAPI.setDebugLevel(1277182231);
-            //CleverTapAPI.setDebugLevel(1);
             clevertap = CleverTapAPI.getInstance(getApplicationContext());
             clevertap.enablePersonalization();
             clevertap.setSyncListener(this);
@@ -200,6 +201,17 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         HashMap<String, Object> event = new HashMap<String, Object>();
         event.put("value", personalityType);
         clevertap.event.push("chosePersonalityType", event);
+    }
+
+    private void setTimeZone() {
+        TimeZone tz = TimeZone.getDefault();
+        Date now = new Date();
+        int offsetFromUtc = tz.getOffset(now.getTime()) / 1000;
+        int hours = offsetFromUtc / 3600;
+
+        HashMap<String, Object> profileUpdate = new HashMap<String, Object>();
+        profileUpdate.put("timeZone", "UTC" + hours);
+        clevertap.profile.push(profileUpdate);
     }
 
     // sets the do not disturb status:  pass false to prevent communications
