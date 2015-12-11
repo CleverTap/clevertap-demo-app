@@ -125,7 +125,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
         try {
             // initialize CleverTap
-            CleverTapAPI.setDebugLevel(1277182231);
+            CleverTapAPI.setDebugLevel(1);
             clevertap = CleverTapAPI.getInstance(getApplicationContext());
             clevertap.enablePersonalization();
             clevertap.setSyncListener(this);
