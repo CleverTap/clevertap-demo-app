@@ -207,8 +207,8 @@ class CleverTap(object):
         if type == "upload":
             for record in data or []:
 
-                Identity = record.get("Identity", record.get("identity", None)) or record.get("FBID", None) or record.get("GPID", None) or record.get("objectId", None)
-                if Identity is None:
+                identity = record.get("identity", None) or record.get("FBID", None) or record.get("GPID", None) or record.get("objectId", None)
+                if identity is None:
                     validation_error = "record must contain an identity, FBID, GPID or objectId field: %s"%record
                     return validation_error
                     break
