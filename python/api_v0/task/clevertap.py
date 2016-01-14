@@ -26,6 +26,7 @@ logging.basicConfig(level=logging.INFO)
 
 class CleverTap(object):
     api_hostname = 'api.clevertap.com'
+    #api_hostname = '192.168.1.193:2829'
 
     def __init__(self, account_id, account_passcode):
         self.account_id         = account_id
@@ -41,6 +42,7 @@ class CleverTap(object):
     @property
     def api_endpoint(self):
         return 'https://%s' % (self.__class__.api_hostname)
+        #return 'http://%s' % (self.__class__.api_hostname)
 
 
     def up(self, data):
@@ -171,6 +173,8 @@ class CleverTap(object):
             response = f.read()
             # Close the opened request
             f.close()
+
+            print response
 
         except Exception, e:
             logger.error(e)
