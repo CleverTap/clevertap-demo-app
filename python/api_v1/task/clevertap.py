@@ -27,7 +27,7 @@ class CleverTap(object):
     def __init__(self, account_id, account_passcode):
         self.account_id         = account_id
         self.account_passcode   = account_passcode
-        self.req_id             = None
+        self.cursor             = None
         self.url                = None
         self.records            = []
 
@@ -101,7 +101,7 @@ class CleverTap(object):
         # initial request is for the cursor
         self.cursor = res.get("cursor", None)
         
-        # if we have a cursor then make a second request with the req_id
+        # if we have a cursor then make a second request with the cursor
         if self.cursor:
 
             # construct the request url
@@ -109,7 +109,7 @@ class CleverTap(object):
             self.url = "%s?cursor=%s"%(self.baseurl, self.cursor)
 
 
-            # convenience inner function to handle req_id requests 
+            # convenience inner function to handle cursor requests 
             def call_records():
                 # make the request
                 res = self._call() or {}
