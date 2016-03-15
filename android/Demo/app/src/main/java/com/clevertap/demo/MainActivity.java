@@ -49,6 +49,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     private String currentAuthor;
     Boolean runningQuoteFromIntent = false;
     Boolean showQuoteOnResume = false;
+    Boolean launched = false;
     Boolean initialSyncComplete = false;
 
     private static final String QUOTE_FRAG_TAG = "quoteFragTag";
@@ -75,7 +76,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         // webservice access via AWS SDK
         initWebService();
 
-        String personalityType = clevertap.profile.getProperty("personalityType");
+        String personalityType = (String ) clevertap.profile.getProperty("personalityType");
         Log.d("PR_GET_TYPE", personalityType != null ? personalityType : "is null");
 
         if (personalityType != null) {
@@ -137,6 +138,14 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
     }
 
     // SyncListener
+
+    public void profileDidInitialize(String CleverTapID){
+        Log.d("PR_INITIALIZED", CleverTapID);
+        Log.d("PR_CT_ID", clevertap.getCleverTapID());
+
+        launch();
+    }
+
     public void profileDataUpdated(JSONObject updates) {
 
         Log.d("PR_UPDATES", updates.toString());
@@ -153,7 +162,17 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
         initialSyncComplete = true;
 
-        String personalityType = clevertap.profile.getProperty("personalityType");
+        launch();
+
+    }
+
+    private void launch() {
+
+        if(launched) return ;
+
+        launched = true;
+
+        String personalityType = (String ) clevertap.profile.getProperty("personalityType");
         currentPersonalityType = personalityType;
         Log.d("PR_GET_TYPE", personalityType != null ? personalityType : "personality type is null");
 
@@ -179,7 +198,6 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             });
         }
     }
-
     public void setInitialProfile(String personalityType) {
 
         if (clevertap == null || personalityType == null) {
@@ -239,7 +257,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             return false;
         }
 
-        String canPush = clevertap.profile.getProperty("canPush");
+        String canPush = clevertap.profile.getProperty("canPush").toString();
         if(canPush == null) {
             // push defaults to enabled
             canPush = "true";
@@ -253,7 +271,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             return false;
         }
 
-        String canEmail = clevertap.profile.getProperty("canEmail");
+        String canEmail = clevertap.profile.getProperty("canEmail").toString();
         if(canEmail == null) {
             // email defaults to disabled
             canEmail = "false";
@@ -267,7 +285,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             return null;
         }
 
-        return clevertap.profile.getProperty("Email");
+        return (String ) clevertap.profile.getProperty("Email");
     }
 
     public String getPersonalityType() {
@@ -275,7 +293,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             return null;
         }
 
-        return clevertap.profile.getProperty("personalityType");
+        return  (String ) clevertap.profile.getProperty("personalityType");
 
     }
 
@@ -344,7 +362,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             return false;
         }
 
-        String hasSeen = clevertap.profile.getProperty("hasSeenInstructions");
+        String hasSeen = clevertap.profile.getProperty("hasSeenInstructions").toString();
         if(hasSeen == null) {
             hasSeen = "false";
         }
@@ -463,7 +481,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             fetchQuote(null, currentPersonalityType, true);
 
         } else {
-            String quoteId = clevertap.profile.getProperty("quoteId");
+            String quoteId = clevertap.profile.getProperty("quoteId").toString();
             Log.d("PR_GET_QOT_ID", quoteId != null ? quoteId : "is null");
 
             if (currentQuoteId != null && quoteId != null && quoteId.equals(currentQuoteId)) {
