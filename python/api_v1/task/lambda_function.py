@@ -107,8 +107,6 @@ def handler (event, context):
 
     for profile in res:
 
-        print profile
-        continue
         # platformInfo is an array as a merged profile may have more than one platform (iOS, Android, Web)  associated with it
         # individual profiles that are merged via the same identity/email value will have multiple platformInfo dictionaries
         platformInfo = profile.get("platformInfo", []) 
