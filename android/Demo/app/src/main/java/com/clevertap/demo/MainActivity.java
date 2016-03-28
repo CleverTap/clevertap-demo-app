@@ -362,7 +362,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             return false;
         }
 
-        String hasSeen = clevertap.profile.getProperty("hasSeenInstructions").toString();
+        String hasSeen = (String) clevertap.profile.getProperty("hasSeenInstructions");
         if(hasSeen == null) {
             hasSeen = "false";
         }
