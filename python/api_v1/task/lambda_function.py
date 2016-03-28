@@ -106,6 +106,9 @@ def handler (event, context):
     quotes_cache = {}
 
     for profile in res:
+
+        print profile
+        continue
         # platformInfo is an array as a merged profile may have more than one platform (iOS, Android, Web)  associated with it
         # individual profiles that are merged via the same identity/email value will have multiple platformInfo dictionaries
         platformInfo = profile.get("platformInfo", []) 
@@ -250,4 +253,4 @@ def handler (event, context):
     return True    
 
 if __name__ == '__main__':
-    handler({"tz_string":"UTC-8"}, None)
+    handler({"tz_string":"UTC-7"}, None)

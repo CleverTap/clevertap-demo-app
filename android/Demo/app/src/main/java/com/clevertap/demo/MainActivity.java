@@ -257,13 +257,8 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             return false;
         }
 
-        String canPush = clevertap.profile.getProperty("canPush").toString();
-        if(canPush == null) {
-            // push defaults to enabled
-            canPush = "true";
-        }
-
-        return Boolean.valueOf(canPush);
+        Object _canPush = clevertap.profile.getProperty("canPush");
+        return (_canPush != null) ? Boolean.valueOf(_canPush.toString()) : true;
     }
 
     public Boolean getEmailEnabled() {
@@ -271,13 +266,8 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             return false;
         }
 
-        String canEmail = clevertap.profile.getProperty("canEmail").toString();
-        if(canEmail == null) {
-            // email defaults to disabled
-            canEmail = "false";
-        }
-
-        return Boolean.valueOf(canEmail);
+        Object _canEmail = clevertap.profile.getProperty("canEmail");
+        return (_canEmail != null) ? Boolean.valueOf(_canEmail.toString()) : false;
     }
 
     public String getEmailAddress() {
@@ -362,8 +352,8 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
             return false;
         }
 
-        Boolean _hasSeen = (Boolean ) clevertap.profile.getProperty("hasSeenInstructions");
-        return (_hasSeen != null) ? _hasSeen : false;
+        Object _hasSeen = clevertap.profile.getProperty("hasSeenInstructions");
+        return (_hasSeen != null) ? Boolean.valueOf(_hasSeen.toString()) : false;
 
     }
 
