@@ -4,7 +4,6 @@
 
     <!-- CleverTap permissions -->
 
-
     <!-- Required to retrieve a unique identifier for the device, see note below -->
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <!-- Required to allow the app to send events -->

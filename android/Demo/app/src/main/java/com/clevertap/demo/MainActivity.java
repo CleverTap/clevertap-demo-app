@@ -2,6 +2,8 @@ package com.clevertap.demo;
 
 import android.net.Uri;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -25,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.TimeZone;
 import java.util.Map;
+import java.util.ArrayList;
 
 import com.amazonaws.auth.CognitoCachingCredentialsProvider;
 import com.amazonaws.regions.Regions;
@@ -76,8 +79,11 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         // webservice access via AWS SDK
         initWebService();
 
-        String personalityType = (String ) clevertap.profile.getProperty("personalityType");
-        Log.d("PR_GET_TYPE", personalityType != null ? personalityType : "is null");
+        String personalityType = null;
+        if (clevertap != null) {
+            personalityType = (String ) clevertap.profile.getProperty("personalityType");
+            Log.d("PR_GET_TYPE", personalityType != null ? personalityType : "is null");
+        }
 
         if (personalityType != null) {
             currentPersonalityType = personalityType;
@@ -98,7 +104,15 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         FragmentManager fragmentManager = getSupportFragmentManager();
         fragmentManager.addOnBackStackChangedListener(this);
 
+        new Handler().postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                launch();
+            }
+        }, 15000);
+
     }
+
 
     @Override
     protected void onStart() {
@@ -143,7 +157,9 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
         Log.d("PR_INITIALIZED", CleverTapID);
         Log.d("PR_CT_ID", clevertap.getCleverTapID());
 
-        launch();
+        if (clevertap.profile.getProperty("personalityType") != null) {
+            launch();
+        }
     }
 
     public void profileDataUpdated(JSONObject updates) {
