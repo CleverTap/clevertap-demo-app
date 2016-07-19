@@ -184,6 +184,7 @@ public class MainActivity extends AppCompatActivity implements SyncListener,
 
     private void launch() {
 
+        if (clevertap == null) return;
         if(launched) return ;
 
         launched = true;
